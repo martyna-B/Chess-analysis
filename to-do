@@ -1,0 +1,28 @@
+Co chcemy zrobić?
+
+1. Opisać dane: B
+a) opis zmiennych - co oznaczają
+b) skąd pochodzą dane
+c) co to szachy
+d) pytanie badawcze: prawdopodobieństwo wygrania białych - od czego zależy (otwarcie, ranking, różnica rankingu, czas rozgrywki)
+
+2. Obróbka danych:
+a) usunięcie niepotrzebnych kolumn
+b) dodanie potrzebnych kolumn
+c) obsługa Nanów
+d) nazwy kolumn
+e) usunięcie wariantów otwarć
+
+3. Analiza danych:
+a0) jak często białe wygrywają B
+
+a) analiza otwarć: które najpopularniejsze, ile danych na otwarcie B
+e) wygranie białych w zależności od otwarcia (np. 10 najpopularniejszych) B
+c) wygranie białych w zależności od rankingu białego (przedziałowo) K
+b) analiza rankingów graczy: średni ranking, czy biali nie mają średnio przewagi w rankingu K
+d) wygranie białych w zależności od różnicy rankingu K
+e) wygranie białych w zależności od czasu rozgrywki K
+
+4. Podsumowanie.
+
+
