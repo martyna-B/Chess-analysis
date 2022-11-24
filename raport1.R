@@ -1,7 +1,12 @@
+library("stringr")
+library("ggplot2")
+library(tidyr)
+library(reshape2)
+
 df <- read.csv(file = "C:/Users/Martyna/Studia/Pakiety statystyczne/raport1/chess_games.csv")
 
 rated_true <- df[df$rated == "True", ]
-reted_false <- df[df$rated == "False", ]
+rated_false <- df[df$rated == "False", ]
 
 openings <- vector()
 
@@ -38,3 +43,12 @@ for(i in 1:nrow(df)){
 }
 
 df["openings_general"] <- openings
+
+ggplot(df, aes(white_rating)) + geom_histogram()
+ggplot(df, aes(black_rating)) + geom_histogram()
+
+df_long_rating <- gather(df, player, rating, c("white_rating", "black_rating") ,factor_key=TRUE)
+
+ggplot(df_long_rating, aes(rating, fill=player)) + geom_histogram(position="dodge") + facet_grid(~player)
+
+mean(df["black_rating"])
