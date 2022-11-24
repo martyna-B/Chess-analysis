@@ -8,6 +8,7 @@ d) pytanie badawcze: prawdopodobieństwo wygrania białych - od czego zależy (o
 
 2. Obróbka danych:
 a) usunięcie niepotrzebnych kolumn
+a1) usunięcie powtarzających się gier
 b) dodanie potrzebnych kolumn
 c) obsługa Nanów
 d) nazwy kolumn
