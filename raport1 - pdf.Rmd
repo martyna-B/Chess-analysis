@@ -9,6 +9,16 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r, include=FALSE}
+df <- read.csv(file = "C:/Users/Martyna/Studia/Pakiety statystyczne/raport1/chess_games.csv")
+
+library("stringr")
+library("ggplot2")
+library(tidyr)
+library(reshape2)
+library(dplyr)
+```
+
 ## Wprowadzenie
 
 Strona internetowa Lichess jest drugą co do wielkości platformą na świecie, która umożliwia grę w szachy online. Użytkownicy mogą grać z$~$komputerem lub między sobą. Każdy gracz ma przypisany ranking, który jest ustalany na podstawie jego umiejętności. Jeśli użytkownik rozgrywa partię "rankingową", w jej wyniku jego ranking rośnie lub maleje.
@@ -40,3 +50,23 @@ Celem analizy będzie odpowiedzenie na pytanie - jakie jest prawdopodobieństwo 
 ## Obróbka danych
 
 ## Analiza danych
+
+### Jak często wygrywa gracz biały?
+
+W celu rozważenia od czego zależy prawdopodobieństwo wygrania białego gracza, najpierw oszacowaliśmy to prawdobieństwo w ogólności. Liczba partii zakończonych zwycięstwem jednej ze stron jest równa:
+
+```{r}
+not_draw_count = sum(df$winner != "draw")
+print(not_draw_count)
+```
+
+Z czego gracz biały wygrał następującą liczbę razy:
+
+```{r}
+white_winner_count = sum(df$winner == "white")
+print(white_winner_count)
+```
+
+Wynika z tego, że szacowane prawdopodobieństwo wygrania gracza białego wynosi w przybliżeniu 52,31% rozgrywek, a gracza czarnego 47,69%.
+
+W dalszej części analizy sprawdzimy, jak to prawdopodobieństwo się zmienia, jeśli odpowiednio uwarunkujemy rozgrywkę. 

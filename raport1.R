@@ -2,6 +2,7 @@ library("stringr")
 library("ggplot2")
 library(tidyr)
 library(reshape2)
+library(dplyr)
 
 df <- read.csv(file = "C:/Users/Martyna/Studia/Pakiety statystyczne/raport1/chess_games.csv")
 
@@ -52,3 +53,62 @@ df_long_rating <- gather(df, player, rating, c("white_rating", "black_rating") ,
 ggplot(df_long_rating, aes(rating, fill=player)) + geom_histogram(position="dodge") + facet_grid(~player)
 
 mean(df["black_rating"])
+
+
+games_id <- vector()
+
+for(i in 1:nrow(df)){
+  game_id <- df$id[i]
+  
+  if(game_id %in% games_id){
+    games_id[i] <- i
+  }
+  else{
+    games_id[i] <- game_id
+  }
+  
+  
+}
+
+
+for(i in 1:length(games_id)){
+  if(games_id[i] == i){
+    print(i)
+  }
+  
+}
+
+the_same_id <- vector()
+
+for(i in 1:nrow(df)){
+  if(df)
+  
+}
+
+df <- na.omit(df)
+df <- distinct(df)
+
+white_wins_count = sum(df$winner == "white")
+black_wins_count = sum(df$winner == "black")
+not_draw_count = sum(df$winner != "draw")
+
+white_wins_percent = white_wins_count/not_draw_count
+black_wins_percent = 1 - white_wins_percent
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
