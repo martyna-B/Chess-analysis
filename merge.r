@@ -16,6 +16,7 @@ df <- cbind(df,ranting_difrents=df$white_rating-df$black_rating)
 df <- cbind(df,przedzial_roznicy_rankingu=df$ranting_difrents %/% 100 * 100)
 df <- cbind(df,przedzial_czasu=df$turns %/% 10 * 10)
 
+
 #openingi
 openings <- vector()
 
@@ -52,3 +53,9 @@ for(i in 1:nrow(df)){
 }
 
 df["openings_general"] <- openings
+
+#Inne data framy do generowania wykresów
+
+wygrana_czas <- aggregate(df$wygrana_bialego,list(df$przedzial_czasu),mean)
+wygrana_rating<- aggregate(df$wygrana_bialego,list(df$przedzial_rankingu_bialego),mean)
+wygrana_roznica<- aggregate(df$wygrana_bialego,list(df$przedzial_roznicy_rankingu),mean)
