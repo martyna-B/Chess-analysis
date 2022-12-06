@@ -60,6 +60,14 @@ for(i in 1:nrow(df)){
 
 df["openings_general"] <- openings
 
+agg_tbl <- df %>% group_by(openings_general) %>% 
+  summarise(total_count=n(),
+            .groups = 'drop')
+
+agg_tbl_ordered <-agg_tbl[order(agg_tbl$total_count, decreasing=TRUE),]
+
+agg_to_analize_tbl_ordered <- agg_tbl_ordered[agg_tbl_ordered$total_count >= 500, ]
+
 #Inne data framy do generowania wykresï¿½w
 
 wygrana_czas <- aggregate(df$wygrana_bialego,list(df$turns_cat),mean)
@@ -158,3 +166,31 @@ plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='ide
 plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity')+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
     labs(x = 'Iloï¿½ï¿½ ruchï¿½w', y = 'Prawdopodobieï¿½stwo wygranej' , title="Remis") 
 grid.arrange(plot_white,plot_black,plot_draw)
+
+#Analizowanie pod k¹tem ró¿nych otwaræ----------------------------------------------------------
+probab = function(dat){a
+  all_count <- sum(dat$winner != "a")
+  white_wins_count <- sum(dat$winner == "white")
+  black_wins_count <- sum(dat$winner == "black")
+  white_prob <-white_wins_count/all_count
+  black_prob <-black_wins_count/all_count
+  draw_prob <- 1 - white_prob - black_prob
+  
+  return(c(white_prob, black_prob, draw_prob))
+}
+
+top_openings <- agg_to_analize_tbl_ordered$openings_general
+
+probs_white <- vector()
+probs_black <- vector()
+probs_draw <- vector()
+
+for(i in 1:10){
+  opening_df <- df[df["openings_general"] == top_openings[i],] 
+  prob <- probab(opening_df)
+  probs_white[i] <- prob[1]
+  probs_black[i] <- prob[2]
+  probs_draw[i] <- prob[3]
+}
+
+probs_df <- data.frame(Otwarcie = top_openings, Bia³y_gracz = probs_white, Czarny_gracz = probs_black, Remis = probs_draw)

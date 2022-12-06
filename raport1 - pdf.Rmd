@@ -133,7 +133,7 @@ W raporcie przeanalizujemy prawdopodobieńtwo różnych zakończeń rozgrywki ta
 print(unique(openings_sicilian)[2:6])
 ```
 
-W celu umożliwienia analizy otwarć stworzyliśmy nową kolumnę, zawierającą jedynie nazwę otwarcia (bez uwzględnienia wariantu). Nazwaliśmy ją "openings_general". Zawiera ona 149 wartości unikalnych. Przeanalizujemy sześć najczęściej rozgrywanych otwarć, czyli:
+W celu umożliwienia analizy otwarć stworzyliśmy nową kolumnę, zawierającą jedynie nazwę otwarcia (bez uwzględnienia wariantu). Nazwaliśmy ją "openings_general". Zawiera ona 149 wartości unikalnych. Przeanalizujemy te otwarcia, których zostało rozegranych więcej niż 500, czyli:
 
 ```{r, echo=FALSE}
 agg_tbl <- df %>% group_by(openings_general) %>% 
@@ -141,7 +141,8 @@ agg_tbl <- df %>% group_by(openings_general) %>%
             .groups = 'drop')
 
 agg_tbl_ordered <-agg_tbl[order(agg_tbl$total_count, decreasing=TRUE),]
-head(agg_tbl_ordered)
+agg_to_analize_tbl_ordered <- agg_tbl_ordered[agg_tbl_ordered$total_count >= 500, ]
+print(agg_to_analize_tbl_ordered)
 ```
 gdzie kolumna "total_count" oznacza liczbę rozegranych gier z wykorzystaniem danego otwarcia.
 
@@ -152,24 +153,61 @@ gdzie kolumna "total_count" oznacza liczbę rozegranych gier z wykorzystaniem da
 
 W celu rozważenia od czego zależy prawdopodobieństwo różnych zakończeń rozgrywki, najpierw oszacowaliśmy to prawdobieństwo w ogólności. Liczba rozegranych partii wynosi:
 
-```{r}
+```{r, echo=FALSE}
 games_count = sum(df$winner != "a")
 print(games_count)
 ```
 
 Z czego gracz biały wygrał następującą liczbę razy:
 
-```{r}
+```{r, echo=FALSE}
 white_winner_count = sum(df$winner == "white")
 print(white_winner_count)
 ```
 
 Natomiast czarny:
 
-```{r}
+```{r, echo=FALSE}
 black_winner_count = sum(df$winner == "black")
 print(black_winner_count)
 ```
 Wynika z tego, że szacowane prawdopodobieństwo wygrania gracza białego wynosi w przybliżeniu 49,85%, gracza czarnego 45,40%, a remisu 4,75%.
 
 W dalszej części analizy sprawdzimy, jak to prawdopodobieństwo się zmienia, jeśli odpowiednio uwarunkujemy rozgrywkę. 
+
+### Warunkowanie otwarciem
+
+Przeanalizujemy jak zmienia się prawdopodobieństwo różnych wyników partii w zależności od otwarcia. Pod uwagę wzięliśmy dziesięć najpopularniejszych, a dla każdego z nich dysponowaliśmy ponad 500 obserwacjami. Obliczyliśmy prawdopodobieństwo wygranych oraz remisu dla poszczególnych otwarć:
+
+```{r, echo=FALSE}
+probab = function(dat){
+  all_count <- sum(dat$winner != "a")
+  white_wins_count <- sum(dat$winner == "white")
+  black_wins_count <- sum(dat$winner == "black")
+  white_prob <-white_wins_count/all_count
+  black_prob <-black_wins_count/all_count
+  draw_prob <- 1 - white_prob - black_prob
+  
+  return(c(white_prob, black_prob, draw_prob))
+}
+
+top_openings <- agg_to_analize_tbl_ordered$openings_general
+
+probs_white <- vector()
+probs_black <- vector()
+probs_draw <- vector()
+
+for(i in 1:10){
+  opening_df <- df[df["openings_general"] == top_openings[i],] 
+  prob <- probab(opening_df)
+  probs_white[i] <- prob[1]
+  probs_black[i] <- prob[2]
+  probs_draw[i] <- prob[3]
+}
+
+probs_df <- data.frame(Otwarcie = top_openings, Biały_gracz = probs_white, Czarny_gracz = probs_black, Remis = probs_draw)
+probs_df
+```
+Z powyższej tabeli wynika, że biały gracz statystycznie częściej niż dla średniej rozgrywki wygrywa dla obrony Philidora ("Philidor Defense"), Otwarcia Angielskiego ("English Opening") oraz partii hiszpańskiej ("Ruy Lopez"). Szanse czarnego gracza na wygraną zwiększają się natomiast przy rozegraniu pozostałych z$~$analizowanych otwarć oprócz obrony Caro-Kann ("Caro-Kann Defense"), gdzie zmalała jednocześnie częstość wygrywania gracza białego, natomiast zwiększyła się częstość remisu.
+
+W ani jednym z analizowanych otwarć gracz czarny nie wygrywał częściej niż gracz biały. 
