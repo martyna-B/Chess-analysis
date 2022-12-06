@@ -45,6 +45,28 @@ for(i in 1:nrow(df)){
 
 df["openings_general"] <- openings
 
+openings_sicilian <- vector()
+
+for(i in 1:nrow(df)){
+  
+  opening_name <- df[i, c("opening_name")]
+  
+  if(str_detect(opening_name, "Sicilian") == TRUE){
+    
+    openings_sicilian[i] <- opening_name
+  }
+  
+  else{
+    
+    openings_sicilian[i] <- 0
+    
+  }
+  
+  
+}
+
+
+
 ggplot(df, aes(white_rating)) + geom_histogram()
 ggplot(df, aes(black_rating)) + geom_histogram()
 
@@ -69,6 +91,12 @@ for(i in 1:nrow(df)){
   
   
 }
+
+agg_tbl <- df %>% group_by(openings_general) %>% 
+  summarise(total_count=n(),
+            .groups = 'drop')
+
+agg_tbl_ordered <-agg_tbl[order(agg_tbl$total_count, decreasing=TRUE),]
 
 
 for(i in 1:length(games_id)){
