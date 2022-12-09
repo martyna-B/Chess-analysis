@@ -180,6 +180,7 @@ probab = function(dat){a
 }
 
 top_openings <- agg_to_analize_tbl_ordered$openings_general
+top_openings_df <- df[df["openings_general"] == top_openings,]
 
 probs_white <- vector()
 probs_black <- vector()

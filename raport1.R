@@ -136,35 +136,6 @@ probab = function(dat){a
   return(c(white_prob, black_prob, draw_prob))
 }
 
-df_sicilian <- df[df["openings_general"] == "Sicilian Defense",]
-prob_sicilian <- probab(df_sicilian)
-
-df_french <- df[df["openings_general"] == "French Defense",]
-prob_french <- probab(df_french)
-
-df_queen <- df[df["openings_general"] == "Queen's Pawn Game",]
-prob_queen <- probab(df_queen)
-
-df_italian <- df[df["openings_general"] == "Italian Game",]
-prob_italian <- probab(df_italian)
-
-df_king <- df[df["openings_general"] == "King's Pawn Game",]
-prob_king <- probab(df_king)
-
-df_ruy <- df[df["openings_general"] == "Ruy Lopez",]
-prob_ruy <- probab(df_ruy)
-
-df_english <- df[df["openings_general"] == "English Opening",]
-prob_english <- probab(df_english)
-
-df_scan <- df[df["openings_general"] == "Scandinavian Defense",]
-prob_scan <- probab(df_scan)
-
-df_philidor <- df[df["openings_general"] == "Philidor Defense",]
-prob_philidor <- probab(df_philidor)
-
-df_carokann <- df[df["openings_general"] == "Caro-Kann Defense",]
-prob_carokann <- probab(df_carokann)
 
 
 top_openings <- agg_to_analize_tbl_ordered$openings_general
@@ -188,7 +159,7 @@ probs_df <- data.frame(Otwarcie = top_openings, Bia³y_gracz = probs_white, Czarn
 samplemean <- function(x, d) {
   mean(x[d])
 }
-generate_data <- function(df, column, place){ 
+generate_data <- function(df, column){ 
   white_win <- numeric()
   white_win_bottom <- numeric()
   white_win_top <- numeric()
@@ -198,12 +169,12 @@ generate_data <- function(df, column, place){
   draw <- numeric()
   draw_bottom <- numeric()
   draw_top <- numeric()
-  values <- numeric()
+  values <- character()
   
   for (value in sort(unique(column))) {
-    # print(value)
+    print(value)
     df2 <- df[which(column == value), ]
-    print(df2)
+    
     if (count(df2) > 10  ) {
       
       values <- append(values,value)
@@ -225,18 +196,20 @@ generate_data <- function(df, column, place){
     }
   }
   new_df <- data.frame(values, white_win,white_win_top,white_win_bottom, black_win,black_win_top,black_win_bottom,draw,draw_bottom,draw_top)
-  write.csv(new_df, place)
+  return(new_df)
 }
 
-generate_data(top_openings_df, top_openings_df$openings_general, "C:\\Users\\Martyna\\Studia\\Pakiety statystyczne\\raport1\\top_openings.csv")
 
 
 
 
 
 
+top_df <- generate_data(top_openings_df, top_openings_df$openings_general)
 
-
+ggplot(data=top_df, aes(values, white_win, black_win)) + geom_bar(stat="identity") +
+  geom_errorbar(aes(ymin=white_win_bottom,
+                    ymax=white_win_top))
 
 
 
