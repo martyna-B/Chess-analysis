@@ -3,6 +3,7 @@ library("ggplot2")
 library(tidyr)
 library(reshape2)
 library(dplyr)
+library("boot")
 
 df <- read.csv(file = "C:/Users/Martyna/Studia/Pakiety statystyczne/raport1/chess_games.csv")
 
@@ -168,6 +169,8 @@ prob_carokann <- probab(df_carokann)
 
 top_openings <- agg_to_analize_tbl_ordered$openings_general
 
+top_openings_df <- df[df["openings_general"] == top_openings,]
+
 probs_white <- vector()
 probs_black <- vector()
 probs_draw <- vector()
@@ -182,11 +185,50 @@ for(i in 1:10){
 
 probs_df <- data.frame(Otwarcie = top_openings, Bia³y_gracz = probs_white, Czarny_gracz = probs_black, Remis = probs_draw)
 
-tab <- as.table(probs_df)
+samplemean <- function(x, d) {
+  mean(x[d])
+}
+generate_data <- function(df, column, place){ 
+  white_win <- numeric()
+  white_win_bottom <- numeric()
+  white_win_top <- numeric()
+  black_win <- numeric()
+  black_win_bottom <- numeric()
+  black_win_top <- numeric()
+  draw <- numeric()
+  draw_bottom <- numeric()
+  draw_top <- numeric()
+  values <- numeric()
+  
+  for (value in sort(unique(column))) {
+    # print(value)
+    df2 <- df[which(column == value), ]
+    print(df2)
+    if (count(df2) > 10  ) {
+      
+      values <- append(values,value)
+      white_ciboot <- boot.ci(boot(df2$white_win, samplemean, R = 1000), conf = 0.95, c("perc"))
+      white_win <- append(white_win, white_ciboot$t0)
+      white_win_bottom <- append(white_win_bottom, white_ciboot$perc[4])
+      white_win_top <- append(white_win_top, white_ciboot$perc[5])
+      
+      black_ciboot <- boot.ci(boot(df2$black_win, samplemean, R = 1000), conf = 0.95, c("perc"))
+      black_win <- append(black_win, black_ciboot$t0)
+      black_win_bottom <- append(black_win_bottom, black_ciboot$perc[4])
+      black_win_top <- append(black_win_top, black_ciboot$perc[5])
+      
+      draw_ciboot <- boot.ci(boot(df2$draw, samplemean, R = 1000), conf = 0.95, c("perc"))
+      draw <- append(draw, draw_ciboot$t0)
+      draw_bottom <- append(draw_bottom, draw_ciboot$perc[4])
+      draw_top <- append(draw_top, draw_ciboot$perc[5])
+      # print(draw_bottom)      
+    }
+  }
+  new_df <- data.frame(values, white_win,white_win_top,white_win_bottom, black_win,black_win_top,black_win_bottom,draw,draw_bottom,draw_top)
+  write.csv(new_df, place)
+}
 
-
-
-
+generate_data(top_openings_df, top_openings_df$openings_general, "C:\\Users\\Martyna\\Studia\\Pakiety statystyczne\\raport1\\top_openings.csv")
 
 
 
