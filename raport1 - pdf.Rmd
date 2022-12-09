@@ -10,13 +10,14 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, include=FALSE}
-df <- read.csv(file = "C:/Users/Martyna/Studia/Pakiety statystyczne/raport1/chess_games.csv")
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+df <- read.csv(file = "chess_games.csv")
 
-library("stringr")
-library("ggplot2")
-library(tidyr)
+library('tidyverse')
 library(reshape2)
-library(dplyr)
+library('boot')
+library('gridExtra')
+library(e1071)
 
 df <- na.omit(df)
 df <- distinct(df)
@@ -211,3 +212,44 @@ probs_df
 Z powyższej tabeli wynika, że biały gracz statystycznie częściej niż dla średniej rozgrywki wygrywa dla obrony Philidora ("Philidor Defense"), Otwarcia Angielskiego ("English Opening") oraz partii hiszpańskiej ("Ruy Lopez"). Szanse czarnego gracza na wygraną zwiększają się natomiast przy rozegraniu pozostałych z$~$analizowanych otwarć oprócz obrony Caro-Kann ("Caro-Kann Defense"), gdzie zmalała jednocześnie częstość wygrywania gracza białego, natomiast zwiększyła się częstość remisu.
 
 W ani jednym z analizowanych otwarć gracz czarny nie wygrywał częściej niż gracz biały. 
+
+### Warunkowanie rankningiem białego
+
+Jak wiemy gracze mają różne poziomy rankigi wię zobaczymy jak wyglądają prawdopodobieństwa zakończeń w zależności od 
+rankingu białego. Napoczątku zobaczmy jak wygląda rozkład rankingu białego a jak czarnego.
+
+```{r}
+plot_white_ratig <- ggplot(data=df, mapping=aes(x=white_rating)) +  geom_histogram(bins=50)+ 
+    labs(x = 'Ranking białego', y= 'Liczebność') # rozkĹ‚ad  rankingu biaĹ‚ego
+plot_black_rating <- ggplot(data=df, mapping=aes(x=black_rating)) +  geom_histogram(bins=50)+ 
+    labs(x = 'Ranking czarnego', y="Liczebność") # rozkĹ‚ad  rankingu czarnego
+grid.arrange(plot_white_ratig,plot_black_rating)
+```
+Z wykresów możemy odzczytać, że rozkład rankigu białego i rankingu czarnego są bardzo podobne. Teraz rodzi się pytanie jak wyglądaja ich średnia,mediana  wariancja, skośnoś czy kurtoza 
+```{r}
+mean(df$white_rating)
+mean(df$black_rating)
+median(df$white_rating)
+median(df$black_rating)
+var(df$white_rating)
+var(df$black_rating)
+skewness(df$white_rating)
+skewness(df$black_rating)
+kurtosis(df$white_rating)
+kurtosis(df$black_rating)
+```
+Tak więc analizując statystyki opisowe możemy dojść do wniosku że biały ma średnio większy ranking ale tylko o około 8 punktów rankingowych co przy średnim rankingu nieco mniejszym niż 1600 jest znikomą przewagą,dodatkowo możemy odzczytać że mediana białego jest o $5$ punktów większa od mediany czarnego co znowu jest małą róznicą przy medianie powyżej 1560. Możemy zobaczyć także biały ma znowu minimalnie większą wariancję ale różni się tylko o $7$ co przy wariancji białego równej $84221.18$ nie jest żadną różnicą. Następnie możemy załważyć, że rozkład rankingu czarnego ma mniejszą skośność ale obydwa rozkłady mają na tyle małe skośności w stosunku do odchylenia standardowego, że możemy przyjąć że ich rozkłady są symetryczne. Jeśli chodzi o kurtozę to wyniki jej są na tyle blisko $0$, że możemy przyjąć, że rozkłady mają tyle samo danych odstających co rozkład normalny.
+
+Z racji, że rankig jest zmienną ciągłą to podzielimy rankig białego na przedziały np $[1300;1400)$ i taki przedział będziemy ozanczać jako $1300$. Każdy przedział ma szerokość $100$. Dodatkowo usuwamy przedziały gdzie liczba gier wynosi mniej niż 11
+Sprawdzimy teraz jak wyglądają Prawdopodobieńtwa końcowych wyników w zależności od przwedziału rankingu białego. Na wykresie czerwone krski pionowe to są przedziały ufności dla prawdopodobieństwa wygranej.
+```{r}
+new_df = read.csv("winner_depend_ranting.csv")
+plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity')+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
+    labs(x = 'Ranking białego', y = 'Prawdopodobieństwo' , title="Wygrana białego") 
+plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity') + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
+    labs(x = 'Raking białego', y = 'Prawdopodobieństwo' , title="Wygrana czarnego") 
+plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity')+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
+    labs(x = 'Ranking białego', y = 'Prawdopodobieństwo' , title="Remis") 
+grid.arrange(plot_white,plot_black,plot_draw)
+```
+Analizując wykres możemy załważyć, że waz ze wzrostem rankingu białego rośnie jego prawdopodobieństwo wygranej, natomias maleje prawdopodobieństwo wygrania czarnego. Możemy też odczytać że prawdopodobieństwo remisu rośnie, ale może to być nikoniecznie stwierdzenie prawdziwe ponieważ patrząc na średnie można tak wnioskować natmiast patrząc na przedziały ufność średniej niekoniecznie ponieważ przy wysokich rankingach się zawierają w sobię więc lepiej stwierdzić, że nie wiadomo jaki ma wpływ. 
