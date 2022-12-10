@@ -133,18 +133,20 @@ probab = function(dat){
   black_prob <-black_wins_count/all_count
   draw_prob <- 1 - white_prob - black_prob
   
-  return(c(white_prob, black_prob, draw_prob))
+  return(c(white_prob, black_prob, draw_prob, all_count))
 }
 
 
 
 top_openings <- agg_to_analize_tbl_ordered$openings_general
 
-top_openings_df <- df[df["openings_general"] == top_openings,]
+
+top_openings_df <- filter(df, df$openings_general %in% top_openings)
 
 probs_white <- vector()
 probs_black <- vector()
 probs_draw <- vector()
+coun_vec <- vector()
 
 for(i in 1:10){
   opening_df <- df[df["openings_general"] == top_openings[i],] 
@@ -152,6 +154,7 @@ for(i in 1:10){
   probs_white[i] <- prob[1]
   probs_black[i] <- prob[2]
   probs_draw[i] <- prob[3]
+  coun_vec[i] <- prob[4]
 }
 
 probs_df <- data.frame(Otwarcie = top_openings, Bia³y_gracz = probs_white, Czarny_gracz = probs_black, Remis = probs_draw)
