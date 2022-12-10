@@ -253,3 +253,11 @@ plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity'
 grid.arrange(plot_white,plot_black,plot_draw)
 ```
 Analizując wykres możemy załważyć, że waz ze wzrostem rankingu białego rośnie jego prawdopodobieństwo wygranej, natomias maleje prawdopodobieństwo wygrania czarnego. Możemy też odczytać że prawdopodobieństwo remisu rośnie, ale może to być nikoniecznie stwierdzenie prawdziwe ponieważ patrząc na średnie można tak wnioskować natmiast patrząc na przedziały ufność średniej niekoniecznie ponieważ przy wysokich rankingach się zawierają w sobię więc lepiej stwierdzić, że nie wiadomo jaki ma wpływ. 
+
+### Warunkowanie różcią rankigu białego i czarnego gracza
+
+Analizowaliśmy jak wyglądają prawdopodobieństwa zakończenia parti od rankingu białego, ale rankig czanrego powinnien mieć też wpływ więc Dodatmy nową kolumnę, która będzie oznaczać różnice między rankingiem białego i czarnego. Różnice w rankingu ponieważ są ciągłe więc też podzielimy je na kategorię tak jak dla rankingu białego. Rozkład różnic w rankigu wygląda następująco:
+```{r}
+
+ggplot(data=df,aes(x=ranting_difrents)) + geom_histogram(bins=50) + labs(x= 'Różnica w rankingu', y='Liczebnść')
+```
