@@ -125,7 +125,7 @@ not_draw_count = sum(df$winner != "draw")
 white_wins_percent = white_wins_count/not_draw_count
 black_wins_percent = 1 - white_wins_percent
 
-probab = function(dat){a
+probab = function(dat){
   all_count <- sum(dat$winner != "a")
   white_wins_count <- sum(dat$winner == "white")
   black_wins_count <- sum(dat$winner == "black")
@@ -159,7 +159,7 @@ probs_df <- data.frame(Otwarcie = top_openings, Bia³y_gracz = probs_white, Czarn
 samplemean <- function(x, d) {
   mean(x[d])
 }
-generate_data <- function(df, column){ 
+generate_data_openings <- function(df, column){ 
   white_win <- numeric()
   white_win_bottom <- numeric()
   white_win_top <- numeric()
@@ -172,7 +172,6 @@ generate_data <- function(df, column){
   values <- character()
   
   for (value in sort(unique(column))) {
-    print(value)
     df2 <- df[which(column == value), ]
     
     if (count(df2) > 10  ) {
@@ -202,14 +201,44 @@ generate_data <- function(df, column){
 
 
 
+top_df <- generate_data_openings(top_openings_df, top_openings_df$openings_general)
+
+top_df_long <- gather(top_df, win, value, c(white_win, black_win, draw), factor_key=TRUE)
 
 
 
-top_df <- generate_data(top_openings_df, top_openings_df$openings_general)
+win_bottom <- vector()
+win_top <- vector()
 
-ggplot(data=top_df, aes(values, white_win, black_win)) + geom_bar(stat="identity") +
-  geom_errorbar(aes(ymin=white_win_bottom,
-                    ymax=white_win_top))
+for(i in 1:30){
+  if(top_df_long[i, "win"] == "white_win"){
+    win_bottom[i] <- top_df_long[i, "white_win_bottom"]
+    win_top[i] <- top_df_long[i, "white_win_top"]
+  }
+  else if(top_df_long[i, "win"] == "black_win"){
+    win_bottom[i] <- top_df_long[i, "black_win_bottom"]
+    win_top[i] <- top_df_long[i, "black_win_top"]
+  }
+  else{
+    win_bottom[i] <- top_df_long[i, "draw_bottom"]
+    win_top[i] <- top_df_long[i, "draw_top"]
+  }
+  
+}
+
+top_df_long["bottom"] <- win_bottom
+top_df_long["top"] <- win_top
+  
+
+ggplot(data=top_df_long, aes(x=values, y=value, fill=win)) + geom_bar(stat="identity", position="dodge") +
+  geom_errorbar(aes(ymin=bottom,
+                    ymax=top), position = position_dodge(0.9)) +
+  theme(axis.text.x = element_text(angle=90), legend.title = element_blank()) +
+  scale_x_discrete(name ="") + 
+  scale_y_continuous(name ="Estymowane prawdopodobieñstwo") + 
+  scale_fill_discrete(labels=c('Wygrana bia³ego', 'Wygrana czarnego', 'Remis'))
+
+
 
 
 

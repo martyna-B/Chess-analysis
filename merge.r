@@ -68,6 +68,85 @@ agg_tbl_ordered <-agg_tbl[order(agg_tbl$total_count, decreasing=TRUE),]
 
 agg_to_analize_tbl_ordered <- agg_tbl_ordered[agg_tbl_ordered$total_count >= 500, ]
 
+generate_data_openings <- function(df, column){ 
+  white_win <- numeric()
+  white_win_bottom <- numeric()
+  white_win_top <- numeric()
+  black_win <- numeric()
+  black_win_bottom <- numeric()
+  black_win_top <- numeric()
+  draw <- numeric()
+  draw_bottom <- numeric()
+  draw_top <- numeric()
+  values <- character()
+  
+  for (value in sort(unique(column))) {
+    df2 <- df[which(column == value), ]
+    
+    if (count(df2) > 10  ) {
+      
+      values <- append(values,value)
+      white_ciboot <- boot.ci(boot(df2$white_win, samplemean, R = 1000), conf = 0.95, c("perc"))
+      white_win <- append(white_win, white_ciboot$t0)
+      white_win_bottom <- append(white_win_bottom, white_ciboot$perc[4])
+      white_win_top <- append(white_win_top, white_ciboot$perc[5])
+      
+      black_ciboot <- boot.ci(boot(df2$black_win, samplemean, R = 1000), conf = 0.95, c("perc"))
+      black_win <- append(black_win, black_ciboot$t0)
+      black_win_bottom <- append(black_win_bottom, black_ciboot$perc[4])
+      black_win_top <- append(black_win_top, black_ciboot$perc[5])
+      
+      draw_ciboot <- boot.ci(boot(df2$draw, samplemean, R = 1000), conf = 0.95, c("perc"))
+      draw <- append(draw, draw_ciboot$t0)
+      draw_bottom <- append(draw_bottom, draw_ciboot$perc[4])
+      draw_top <- append(draw_top, draw_ciboot$perc[5])
+      # print(draw_bottom)      
+    }
+  }
+  new_df <- data.frame(values, white_win,white_win_top,white_win_bottom, black_win,black_win_top,black_win_bottom,draw,draw_bottom,draw_top)
+  return(new_df)
+}
+
+
+
+
+top_df <- generate_data_openings(top_openings_df, top_openings_df$openings_general)
+
+top_df_long <- gather(top_df, win, value, c(white_win, black_win, draw), factor_key=TRUE)
+
+
+
+win_bottom <- vector()
+win_top <- vector()
+
+for(i in 1:30){
+  if(top_df_long[i, "win"] == "white_win"){
+    win_bottom[i] <- top_df_long[i, "white_win_bottom"]
+    win_top[i] <- top_df_long[i, "white_win_top"]
+  }
+  else if(top_df_long[i, "win"] == "black_win"){
+    win_bottom[i] <- top_df_long[i, "black_win_bottom"]
+    win_top[i] <- top_df_long[i, "black_win_top"]
+  }
+  else{
+    win_bottom[i] <- top_df_long[i, "draw_bottom"]
+    win_top[i] <- top_df_long[i, "draw_top"]
+  }
+  
+}
+
+top_df_long["bottom"] <- win_bottom
+top_df_long["top"] <- win_top
+
+
+ggplot(data=top_df_long, aes(x=values, y=value, fill=win)) + geom_bar(stat="identity", position="dodge") +
+  geom_errorbar(aes(ymin=bottom,
+                    ymax=top), position = position_dodge(0.9)) +
+  theme(axis.text.x = element_text(angle=90), legend.title = element_blank()) +
+  scale_x_discrete(name ="") + 
+  scale_y_continuous(name ="Estymowane prawdopodobieñstwo") + 
+  scale_fill_discrete(labels=c('Wygrana bia³ego', 'Wygrana czarnego', 'Remis'))
+
 #Inne data framy do generowania wykresï¿½w
 
 wygrana_czas <- aggregate(df$wygrana_bialego,list(df$turns_cat),mean)
