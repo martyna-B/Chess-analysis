@@ -191,7 +191,6 @@ Strona internetowa Lichess jest drugą co do wielkości platformą na świecie, 
 Dane, które zostaną poddane analizie, zawierają informacje o$~$ponad 20 000$~$rozgrywkach szachowych ze strony Lichess Games. Dostępne są na witrynie kaggle. Składają się z następujących kolumn:
 
 
-
 - id (zawiera elementy typu "character") - numer ID rozgrywki
 - rated ("character") - wartość "True" lub "False" w$~$zależności od tego, czy partia jest "rankingowa"
 - created_at ("numeric") - czas rozpoczęcia gry
@@ -214,6 +213,32 @@ Celem analizy będzie odpowiedzenie na pytanie - jakie jest prawdopodobieństwo 
 
 ## Obróbka danych
 
+### Usunięcie niepotrzebnych kolumn
+
+Nasze dane zawierają dużo kolumn z, których nie korzystmy dlatego usuniemy niepotrzebne kolumny w wyniku czego nasza tabela z danymi wygląda następująco.
+```{r,echo=FALSE}
+columns <- c('turns','winner','white_rating','black_rating','opening_name')
+print(head(df[columns]))
+```
+### Usunięcie duplikatów i wierszy z brakiem danych
+W następnym kroku usuwamy duplikujące się wierszę oraz wierszę w których występuje brak danych
+```{r , echo=FALSE}
+df <- distinct(df)
+df <- na.omit(df)
+
+```
+
+### Zastosowanie One Hot Encoding dla kolumny "winner"
+
+Wynik naszej parti jest zawarty w kolumnie "winner".Ta kolumna ma $3$ wartości: "white" , "black" i "draw".
+Dla ułatwienia analizy stworzymy $3$ dodtakowe kolumny o odpowiedni nazwach "white_win","black_win","draw". Każda z tych kolumn ma wartość $1$ lub $0$. Gdy w kolumnie "winner" jest "white" to $1$ przypisujemy do "white_win", jeśli "black" to do "black_win" natomiast jeśli "draw" to do "draw". W przeciwnych przypadkach przypisujemy $0$.
+```{r}
+df <-  df %>% mutate(
+    white_win = ifelse(winner =='white',1,0),
+    black_win = ifelse(winner =='black',1,0),
+    draw = ifelse(winner =='draw',1,0)
+)
+```
 ### Otwarcia (?)
 
 W raporcie przeanalizujemy prawdopodobieńtwo różnych zakończeń rozgrywki także ze względu na wybrane otwarcie. Aby uzyskać rzetelne wyniki, nie możemy uwzględnić otwarć, które rozegrała zbyt mała liczba graczy. Okazuje się jednak, że kolumna opening_name zawiera 1477 unikalnych wartości. Dzieje się tak, ponieważ dane rozróżniają wiele wariantów poszczególnych otwarć. Przykładowo "obrona sycylijska" została rozegrana w 181 różnych wariantach, takich jak:
@@ -234,6 +259,8 @@ agg_to_analize_tbl_ordered <- agg_tbl_ordered[agg_tbl_ordered$total_count >= 500
 print(agg_to_analize_tbl_ordered)
 ```
 gdzie kolumna "total_count" oznacza liczbę rozegranych gier z wykorzystaniem danego otwarcia.
+
+
 
 ## Analiza danych
 
@@ -331,10 +358,10 @@ ggplot(data=top_df_long, aes(x=values, y=value, fill=win)) + geom_bar(stat="iden
 Jak wiemy gracze mają różne poziomy rankigi wię zobaczymy jak wyglądają prawdopodobieństwa zakończeń w zależności od 
 rankingu białego. Napoczątku zobaczmy jak wygląda rozkład rankingu białego a jak czarnego.
 
-```{r}
-plot_white_ratig <- ggplot(data=df, mapping=aes(x=white_rating)) +  geom_histogram(bins=50)+ 
+```{r,echo=FALSE}
+plot_white_ratig <- ggplot(data=df, mapping=aes(x=white_rating)) +  geom_histogram(bins=50,colour='black')+ 
     labs(x = 'Ranking białego', y= 'Liczebność') # rozkĹ‚ad  rankingu biaĹ‚ego
-plot_black_rating <- ggplot(data=df, mapping=aes(x=black_rating)) +  geom_histogram(bins=50)+ 
+plot_black_rating <- ggplot(data=df, mapping=aes(x=black_rating)) +  geom_histogram(bins=50,color='black')+ 
     labs(x = 'Ranking czarnego', y="Liczebność") # rozkĹ‚ad  rankingu czarnego
 grid.arrange(plot_white_ratig,plot_black_rating)
 ```
@@ -355,22 +382,57 @@ Tak więc analizując statystyki opisowe możemy dojść do wniosku że biały m
 
 Z racji, że rankig jest zmienną ciągłą to podzielimy rankig białego na przedziały np $[1300;1400)$ i taki przedział będziemy ozanczać jako $1300$. Każdy przedział ma szerokość $100$. Dodatkowo usuwamy przedziały gdzie liczba gier wynosi mniej niż 11
 Sprawdzimy teraz jak wyglądają Prawdopodobieńtwa końcowych wyników w zależności od przwedziału rankingu białego. Na wykresie czerwone krski pionowe to są przedziały ufności dla prawdopodobieństwa wygranej.
-```{r}
+```{r,echo=FALSE}
 new_df = read.csv("winner_depend_ranting.csv")
-plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity')+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
-    labs(x = 'Ranking białego', y = 'Prawdopodobieństwo' , title="Wygrana białego") 
-plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity') + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
-    labs(x = 'Raking białego', y = 'Prawdopodobieństwo' , title="Wygrana czarnego") 
-plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity')+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
-    labs(x = 'Ranking białego', y = 'Prawdopodobieństwo' , title="Remis") 
-grid.arrange(plot_white,plot_black,plot_draw)
+plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
+    labs(x = 'Ranking białego', y = 'P' , title="Wygrana białego")
+plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity',color='black', fill="#6c584c") + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
+    labs(x = 'Raking białego', y = 'P' , title="Wygrana czarnego") + ylim(0,1) 
+plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity',color='black', fill="#7e7f83")+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
+    labs(x = 'Ranking białego', y = 'P' , title="Remis") 
+grid.arrange(plot_white,plot_black,plot_draw) 
 ```
 Analizując wykres możemy załważyć, że waz ze wzrostem rankingu białego rośnie jego prawdopodobieństwo wygranej, natomias maleje prawdopodobieństwo wygrania czarnego. Możemy też odczytać że prawdopodobieństwo remisu rośnie, ale może to być nikoniecznie stwierdzenie prawdziwe ponieważ patrząc na średnie można tak wnioskować natmiast patrząc na przedziały ufność średniej niekoniecznie ponieważ przy wysokich rankingach się zawierają w sobię więc lepiej stwierdzić, że nie wiadomo jaki ma wpływ. 
 
 ### Warunkowanie różnicą rankigu białego i czarnego gracza
 
-Analizowaliśmy jak wyglądają prawdopodobieństwa zakończenia parti od rankingu białego, ale ranking czarnego powinien mieć też wpływ więc Dodatmy nową kolumnę, która będzie oznaczać różnice między rankingiem białego i czarnego. Różnice w rankingu ponieważ są ciągłe więc też podzielimy je na kategorię tak jak dla rankingu białego. Rozkład różnic w rankigu wygląda następująco:
-```{r}
+Analizowaliśmy jak wyglądają prawdopodobieństwa zakończenia parti od rankingu białego, ale ranking czarnego powinien mieć też wpływ więc Dodamy nową kolumnę, która będzie oznaczać różnice między rankingiem białego i czarnego. Rozkład różnic w rankigu wygląda następująco:
+```{r,echo=FALSE}
 
-ggplot(data=df,aes(x=ranting_difrents)) + geom_histogram(bins=50) + labs(x= 'Różnica w rankingu', y='Liczebnść')
+ggplot(data=df,aes(x=ranting_difrents)) + geom_histogram(bins=50, color='black') + labs(x= 'Różnica w rankingu', y='Liczebnść')
 ```
+Jak możemy zobaczyć rozkład różnic w rankingu jest niemal symetryczny a średnią wartość jest w okolicach $0$ a dokładnie wynosi $7.56$. Możemy zobaczyć, że wartość różnic rankingu zawierają się w przedziale $[-1000,1000]$ więc podzielimy różnice na kategorię o długości $100$ tak jak w przypadku rankingu bialego. Zobaczymy teraz jak wyglądają prawdopodobieństwa zakończenia parti w zależności od przeziału różnic dla przedziałów które zawierają co najmniej 10 gier.
+```{r,echo=FALSE}
+new_df = read.csv("winner_depend_diffrents_ranting.csv")
+plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
+    labs(x = 'Różnica w rankingu', y = 'P' , title="Wygrana białego")
+plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity',color='black', fill="#6c584c") + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
+    labs(x = 'Różnica w rankingu', y = 'P' , title="Wygrana czarnego") 
+plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity',color='black', fill="#7e7f83")+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
+    labs(x = 'Różnica w rankingu', y = 'P' , title="Remis") 
+grid.arrange(plot_white,plot_black,plot_draw) 
+```
+w powyższych wykresów wynika, że wraz ze wzrostem różnicy w rankingu rośnie prawdopodobieństwop wygranej białego, natomiast maleje szansa na wygranie czarnego. W przypadku remisu ciężko wywnioskować zależność.
+
+### Warunkowanie ilością ruchów
+
+Jak wiemy partie w szachach mają różne długości. Sprawdzimy najpierw ile trwają partię w naszych grach.
+
+```{r,echo=FALSE}
+
+ggplot(data=df,aes(x=turns)) + geom_histogram(bins=50, color='black') + labs(x= 'Ilość ruchów ', y='Liczebnść') 
+
+```
+jak możemy załważyć większość gier kończy się po $100$ ruchach. Z powodu, że nasze dane są ciągłe podzielimy je na przedziały o długości $10$ gdzie pierwszy przedział to $[0,10)$. Sprawdzimy jak wyglądają prawdopodobieństwa zakończenia parti w zależności od przeziałów ilości posunięc dla przedziałów które zawierają co najmniej 10 gier
+
+```{r, echo=FALSE}
+new_df = read.csv("winner_depend_turns.csv")
+plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
+    labs(x = 'Ilość ruchów', y = 'P' , title="Wygrana białego")
+plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity',color='black', fill="#6c584c") + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
+    labs(x = 'Ilość ruchów', y = 'P' , title="Wygrana czarnego") 
+plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity',color='black', fill="#7e7f83")+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
+    labs(x = 'Ilość ruchów', y = 'P' , title="Remis") 
+grid.arrange(plot_white,plot_black,plot_draw) 
+```
+z wykresów możemy odzczytać że prawdpodobieństwo wygrania białych maleje wraz z kolejnymi róchami, natomiast prawdopodobieństwo wygrania czarnych rośnie do około $100$ ruchów by potem maleć. Natomiast prawdopodobieństwo remisu rośnie wraz z kolejnymi posunięciami. 
