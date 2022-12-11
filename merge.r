@@ -61,12 +61,18 @@ for(i in 1:nrow(df)){
 df["openings_general"] <- openings
 
 agg_tbl <- df %>% group_by(openings_general) %>% 
-  summarise(total_count=n(),
-            .groups = 'drop')
+  summarise(total_count=n())
 
 agg_tbl_ordered <-agg_tbl[order(agg_tbl$total_count, decreasing=TRUE),]
 
 agg_to_analize_tbl_ordered <- agg_tbl_ordered[agg_tbl_ordered$total_count >= 500, ]
+
+top_openings <- agg_to_analize_tbl_ordered$openings_general
+
+top_openings_df <- filter(df, df$openings_general %in% top_openings)
+
+
+
 
 generate_data_openings <- function(df, column){ 
   white_win <- numeric()

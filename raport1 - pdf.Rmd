@@ -153,7 +153,7 @@ agg_to_analize_tbl_ordered <- agg_tbl_ordered[agg_tbl_ordered$total_count >= 500
 
 top_openings <- agg_to_analize_tbl_ordered$openings_general
 
-top_openings_df <- df[df["openings_general"] == top_openings,]
+top_openings_df <- filter(df, df$openings_general %in% top_openings)
 
 top_df <- generate_data_openings(top_openings_df, top_openings_df$openings_general)
 
@@ -186,7 +186,7 @@ top_df_long["top"] <- win_top
 
 ## Wprowadzenie
 
-Strona internetowa Lichess jest drugą co do wielkości platformą na świecie, która umożliwia grę w szachy online. Użytkownicy mogą grać z$~$komputerem lub między sobą. Każdy gracz ma przypisany ranking, który jest ustalany na podstawie jego umiejętności. Jeśli użytkownik rozgrywa partię "rankingową", w jej wyniku jego ranking rośnie lub maleje.
+Strona internetowa Lichess jest drugą co do wielkości platformą na świecie, która umożliwia grę w szachy online. Użytkownicy mogą grać z$~$komputerem lub między sobą. Każdy gracz ma przypisany ranking (początkowo ma on wartość 1500), który jest ustalany na podstawie jego umiejętności. Jeśli użytkownik rozgrywa partię "rankingową", w jej wyniku jego ranking rośnie lub maleje.
 
 Dane, które zostaną poddane analizie, zawierają informacje o$~$ponad 20 000$~$rozgrywkach szachowych ze strony Lichess Games. Dostępne są na witrynie kaggle. Składają się z następujących kolumn:
 
@@ -331,15 +331,19 @@ ggplot(data=probs_df_long, aes(x=Otwarcie, y=win, fill=value)) + geom_bar(stat="
   scale_fill_discrete(labels=c('Wygrana białego', 'Wygrana czarnego', 'Remis')) +
   geom_hline(yintercept=0.4985, color="#d9c5b2", linetype="dashed", size=1) +
   geom_hline(yintercept=0.4550, color="#6c584c", linetype="dashed", size=1) +
+  geom_hline(yintercept=0.0475, color="#7e7f83", linetype="dashed", size=1) + 
   scale_fill_discrete(labels=c('Wygrana białego', 'Wygrana czarnego', 'Remis')) +
   scale_fill_manual(values=c("#d9c5b2", "#6c584c", "#7e7f83"))
   
 ```
+Przerywanymi liniami oznaczyliśmy częstość poszczególnych wyników bez warunkowania: beżowa linia to częstość wygrywania gracza białego, brązowa czarnego, a szara remisu.
+
+
 Z powyższego wykresu wynika, że biały gracz statystycznie częściej niż dla średniej rozgrywki wygrywa dla obrony Philidora ("Philidor Defense"), Otwarcia Angielskiego ("English Opening") oraz partii hiszpańskiej ("Ruy Lopez"). Szanse czarnego gracza na wygraną zwiększają się natomiast przy rozegraniu pozostałych z$~$analizowanych otwarć oprócz obrony Caro-Kann ("Caro-Kann Defense"), gdzie zmalała jednocześnie częstość wygrywania gracza białego, natomiast zwiększyła się częstość remisu.
 
 Przy dwóch z analizowanych otwarć gracz czarny nie wygrywał częściej niż gracz biały: przy obronie sycylijskiej ("Sicilian Defense") oraz gry pionkiem hetmańskim ("Queen's Pawn Game).
 
-Aby sprawdzić dokładność naszych obliczeń, stworzyliśmy przedziały ufności za pomocą metody bootstrap na poziomie ufności równym 0,05. 
+Aby sprawdzić dokładność naszych obliczeń oraz wysunąć wnioski z danych, stworzyliśmy przedziały ufności za pomocą metody bootstrap na poziomie ufności równym 0,05. 
 
 ```{r, echo=FALSE}
 ggplot(data=top_df_long, aes(x=values, y=value, fill=win)) + geom_bar(stat="identity", position="dodge", colour="black") +
@@ -352,6 +356,8 @@ ggplot(data=top_df_long, aes(x=values, y=value, fill=win)) + geom_bar(stat="iden
   scale_fill_discrete(labels=c('Wygrana białego', 'Wygrana czarnego', 'Remis')) +
   scale_fill_manual(values=c("#d9c5b2", "#6c584c", "#7e7f83"))
 ```
+Okazuje się, że na poziomie ufności 0,05 nie możemy stwierdzić dla każdego otwarcia, prawdopodobieństwo wygrania którego gracza jest większe. Konkretne wnioski możemy wysunąć jednak dla Otwarcia Angielskiego, Obrony Philidora oraz partii hiszpańskiej - dla nich stwierdzamy na poziomie ufności 0,05, iż prawdopodobieństwo wygrania białego gracza jest wyższe niż prawdopodobieństwo wygrania czarnego gracza. Prawdopodobieństwo remisu nie różni się natomiast znacząco dla żadnego otwarcia.
+
 
 ### Warunkowanie rankningiem białego
 
@@ -378,6 +384,15 @@ skewness(df$black_rating)
 kurtosis(df$white_rating)
 kurtosis(df$black_rating)
 ```
+
+|           | biały    | czarny   |
+|-----------|----------|----------|
+| średnia   | 1596,15  | 1588,39  |
+| mediana   | 1567     | 1562     |
+| wariancja | 84221,18 | 84214,67 |
+| skośność  | 0,30     | 0,25     |
+| kurtoza   | 0,029    | -0,052   |
+
 Tak więc analizując statystyki opisowe możemy dojść do wniosku że biały ma średnio większy ranking ale tylko o około 8 punktów rankingowych co przy średnim rankingu nieco mniejszym niż 1600 jest znikomą przewagą,dodatkowo możemy odzczytać że mediana białego jest o $5$ punktów większa od mediany czarnego co znowu jest małą róznicą przy medianie powyżej 1560. Możemy zobaczyć także biały ma znowu minimalnie większą wariancję ale różni się tylko o $7$ co przy wariancji białego równej $84221.18$ nie jest żadną różnicą. Następnie możemy załważyć, że rozkład rankingu czarnego ma mniejszą skośność ale obydwa rozkłady mają na tyle małe skośności w stosunku do odchylenia standardowego, że możemy przyjąć że ich rozkłady są symetryczne. Jeśli chodzi o kurtozę to wyniki jej są na tyle blisko $0$, że możemy przyjąć, że rozkłady mają tyle samo danych odstających co rozkład normalny.
 
 Z racji, że rankig jest zmienną ciągłą to podzielimy rankig białego na przedziały np $[1300;1400)$ i taki przedział będziemy ozanczać jako $1300$. Każdy przedział ma szerokość $100$. Dodatkowo usuwamy przedziały gdzie liczba gier wynosi mniej niż 11
