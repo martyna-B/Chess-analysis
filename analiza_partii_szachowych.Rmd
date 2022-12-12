@@ -1,0 +1,467 @@
+---
+title: "analiza_partii_szachowych"
+author: "Martyna Bielec, Maciej Karczewski"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+df <- read.csv(file = "chess_games.csv")
+
+
+library(reshape2)
+library('boot')
+library('gridExtra')
+library(e1071)
+library("stringr")
+library("ggplot2")
+library(tidyr)
+library(dplyr)
+#library('tidyverse')
+
+df <- na.omit(df)
+df <- distinct(df)
+
+#Dodawanie nowych kolumn ------------------------------
+df <-  df %>% mutate(
+    white_win = ifelse(winner =='white',1,0),
+    black_win = ifelse(winner =='black',1,0),
+    draw = ifelse(winner =='draw',1,0)
+)
+df <- cbind(df,white_ranking_cat=(df$white_rating %/% 100 + 1) * 100)
+df <- cbind(df,ranting_difrents=df$white_rating-df$black_rating)
+df <- cbind(df,rating_diffrents_cat=(df$ranting_difrents %/% 100 + 1)* 100)
+df <- cbind(df,turns_cat=(df$turns %/% 10 + 1)* 10)
+
+
+#openingi
+openings <- vector()
+
+for(i in 1:nrow(df)){
+  
+  opening_name <- df[i, c("opening_name")]
+  
+  if(str_detect(opening_name, ":") == TRUE){
+    
+    location <- str_locate(opening_name, ":")
+    openings[i] <- str_sub(opening_name, 1, location[1,1] - 1)
+  }
+  
+  else if(str_detect(opening_name, "#") == TRUE){
+    
+    location <- str_locate(opening_name, "#")
+    openings[i] <- str_sub(opening_name, 1, location[1,1] - 2)
+  }
+  
+  else if(str_detect(opening_name, "\\|") == TRUE){
+    
+    
+    location <- str_locate(opening_name, "\\|")
+    openings[i] <- str_sub(opening_name, 1, location[1,1] - 1)
+  }
+  
+  else{
+    
+    openings[i] <- df[i, c("opening_name")]
+    
+  }
+  
+  
+}
+
+df["openings_general"] <- openings
+
+#Inne data framy do generowania wykresďż˝w
+
+#wygrana_czas <- aggregate(df$wygrana_bialego,list(df$turns_cat),mean)
+#wygrana_rating<- aggregate(df$wygrana_bialego,list(df$white_ranking_cat),mean)
+#wygrana_roznica<- aggregate(df$wygrana_bialego,list(df$rating_diffrents_cat),mean)
+
+openings_sicilian <- vector()
+
+for(i in 1:nrow(df)){
+  
+  opening_name <- df[i, c("opening_name")]
+  
+  if(str_detect(opening_name, "Sicilian Defense: ") == TRUE){
+    
+    openings_sicilian[i] <- opening_name
+  }
+  
+  else{
+    
+    openings_sicilian[i] <- 0
+    
+  }
+}
+
+samplemean <- function(x, d) {
+  mean(x[d])
+}
+
+generate_data_openings <- function(df, column){ 
+  white_win <- numeric()
+  white_win_bottom <- numeric()
+  white_win_top <- numeric()
+  black_win <- numeric()
+  black_win_bottom <- numeric()
+  black_win_top <- numeric()
+  draw <- numeric()
+  draw_bottom <- numeric()
+  draw_top <- numeric()
+  values <- character()
+  
+  for (value in sort(unique(column))) {
+    df2 <- df[which(column == value), ]
+    
+    if (count(df2) > 10  ) {
+      
+      values <- append(values,value)
+      white_ciboot <- boot.ci(boot(df2$white_win, samplemean, R = 1000), conf = 0.95, c("perc"))
+      white_win <- append(white_win, white_ciboot$t0)
+      white_win_bottom <- append(white_win_bottom, white_ciboot$perc[4])
+      white_win_top <- append(white_win_top, white_ciboot$perc[5])
+      
+      black_ciboot <- boot.ci(boot(df2$black_win, samplemean, R = 1000), conf = 0.95, c("perc"))
+      black_win <- append(black_win, black_ciboot$t0)
+      black_win_bottom <- append(black_win_bottom, black_ciboot$perc[4])
+      black_win_top <- append(black_win_top, black_ciboot$perc[5])
+      
+      draw_ciboot <- boot.ci(boot(df2$draw, samplemean, R = 1000), conf = 0.95, c("perc"))
+      draw <- append(draw, draw_ciboot$t0)
+      draw_bottom <- append(draw_bottom, draw_ciboot$perc[4])
+      draw_top <- append(draw_top, draw_ciboot$perc[5])
+      # print(draw_bottom)      
+    }
+  }
+  new_df <- data.frame(values, white_win,white_win_top,white_win_bottom, black_win,black_win_top,black_win_bottom,draw,draw_bottom,draw_top)
+  return(new_df)
+}
+
+agg_tbl <- df %>% group_by(openings_general) %>% 
+  summarise(total_count=n(),
+            .groups = 'drop')
+
+agg_tbl_ordered <-agg_tbl[order(agg_tbl$total_count, decreasing=TRUE),]
+
+agg_to_analize_tbl_ordered <- agg_tbl_ordered[agg_tbl_ordered$total_count >= 500, ]
+
+top_openings <- agg_to_analize_tbl_ordered$openings_general
+
+top_openings_df <- filter(df, df$openings_general %in% top_openings)
+
+top_df <- generate_data_openings(top_openings_df, top_openings_df$openings_general)
+
+top_df_long <- gather(top_df, win, value, c(white_win, black_win, draw), factor_key=TRUE)
+
+
+
+win_bottom <- vector()
+win_top <- vector()
+
+for(i in 1:30){
+  if(top_df_long[i, "win"] == "white_win"){
+    win_bottom[i] <- top_df_long[i, "white_win_bottom"]
+    win_top[i] <- top_df_long[i, "white_win_top"]
+  }
+  else if(top_df_long[i, "win"] == "black_win"){
+    win_bottom[i] <- top_df_long[i, "black_win_bottom"]
+    win_top[i] <- top_df_long[i, "black_win_top"]
+  }
+  else{
+    win_bottom[i] <- top_df_long[i, "draw_bottom"]
+    win_top[i] <- top_df_long[i, "draw_top"]
+  }
+  
+}
+
+top_df_long["bottom"] <- win_bottom
+top_df_long["top"] <- win_top
+```
+
+## Wprowadzenie
+
+Strona internetowa [Lichess](https://lichess.org/) jest drugą co do wielkości platformą na świecie, która umożliwia grę w szachy online. Użytkownicy mogą grać z$~$komputerem lub między sobą. Każdy gracz ma przypisany ranking (początkowo ma on wartość 1500), który jest ustalany na podstawie jego umiejętności. Jeśli użytkownik rozgrywa partię "rankingową", w jej wyniku jego ranking rośnie lub maleje.
+
+Dane, które zostaną poddane analizie, zawierają informacje o$~$ponad 20 000$~$rozgrywkach szachowych ze strony Lichess Games. Dostępne są na witrynie kaggle. Składają się z następujących kolumn:
+
+
+- id (zawiera elementy typu "character") - numer ID rozgrywki
+- rated ("character") - wartość "True" lub "False" w$~$zależności od tego, czy partia jest "rankingowa"
+- created_at ("numeric") - czas rozpoczęcia gry
+- last_move_at ("numeric") - czas zakończenia gry
+- turns ("numeric") - liczba posunięć
+- victory_status ("character") - status zakończenia gry: "mate" dla zakończenia matem, "resign" dla zakończenia przez poddanie się jednej ze stron, "draw" dla remisu lub "outoftime" dla rozgrywki zakończonej z powodu upływu czasu
+- winner ("character") - zwycięzca gry: "white", jeśli wygrał gracz biały, "black", jeśli czarny lub "draw" w$~$przypadku remisu
+- increment_code ("character") - składa się z dwóch liczb rozdzielonych znakiem "+"; pierwsza oznacza liczbę minut przypadających na gracza na wszystkie jego ruchy, druga liczbę sekund, o którą zwiększa się czas gracza po wykonaniu ruchu
+- white_id ("character") - ID gracza białego
+- white_rating ("numeric") - ranking gracza białego
+- black_id ("character") - ID gracza czarnego
+- black_rating ("numeric") - ranking gracza czarnego
+- moves ("character") - wszystkie ruchy zapisane w$~$standardowej notacji szachowej
+- opening_eco ("character") - standaryzowany kod dla rozgranego otwarcia
+- opening_name ("character") - nazwa rozgranego otwarcia
+- opening_ply ("character") - liczba ruchów w$~$fazie otwarcia
+ 
+Celem analizy będzie odpowiedzenie na pytanie - jakie jest prawdopodobieństwo różnych zakończeń gry: wygranej białego gracza, czarnego lub remisu? Będziemy rozważać ten problem pod kątem rozegranego otwarcia, rankingu graczy, różnicy w$~$rankingu między graczem białym i$~$czarnym oraz liczby posunięć w$~$partii. 
+
+Użyjemy metody bootstrap do stworzenia przedziałów ufności estymowanego prawdopodobieństwa. Będą to przedziały percentylowe, zaznaczone na wykresach czerwonymi kreskami. 
+
+
+## Obróbka danych
+
+### Usunięcie niepotrzebnych kolumn
+
+Nasze dane zawierają dużo kolumn, z których nie korzystamy. Usuniemy niepotrzebne kolumny, w wyniku czego nasza tabela z danymi wygląda następująco:
+```{r,echo=FALSE}
+columns <- c('turns','winner','white_rating','black_rating','opening_name')
+print(head(df[columns]))
+```
+### Usunięcie duplikatów i wierszy z brakiem danych
+W następnym kroku usuwamy duplikujące się wiersze oraz wiersze, w których nie ma danych.
+```{r , echo=FALSE}
+df <- distinct(df)
+df <- na.omit(df)
+```
+
+### Zastosowanie One Hot Encoding dla kolumny "winner"
+
+Wynik naszej partii znajduje się w kolumnie "winner". Ta kolumna zawiera $3$ wartości: "white" , "black" i "draw".
+Dla ułatwienia analizy stworzymy $3$ dodatkowe kolumny o odpowiednich nazwach "white_win", "black_win" oraz "draw". Każda z tych kolumn ma wartość $1$ lub $0$. Gdy w kolumnie "winner" znajduje się "white", czyli zwyciężył biały gracz, to $1$ przypisujemy do "white_win", a do "black_win" oraz "draw" przypisujemy $0$. Analogicznie postępujemy dla pozostałych wyników.
+
+```{r}
+df <-  df %>% mutate(
+    white_win = ifelse(winner =='white',1,0),
+    black_win = ifelse(winner =='black',1,0),
+    draw = ifelse(winner =='draw',1,0)
+)
+```
+### Wybór najczęstszych otwarć
+
+W raporcie przeanalizujemy prawdopodobieństwo różnych zakończeń rozgrywki także ze względu na wybrane otwarcie. Aby uzyskać rzetelne wyniki, nie możemy uwzględnić otwarć, które zostały rozegrane za mało razy. Okazuje się jednak, że kolumna "opening_name" zawiera $1477$ unikalnych wartości. Dzieje się tak, ponieważ dane rozróżniają wiele wariantów poszczególnych otwarć. Przykładowo "Obrona Sycylijska" została rozegrana w $181$ różnych wariantach, takich jak:
+
+```{r, echo=FALSE}
+print(unique(openings_sicilian)[2:6])
+```
+
+W celu umożliwienia analizy otwarć stworzymy nową kolumnę, zawierającą jedynie nazwę otwarcia (bez uwzględnienia wariantu). Nazywamy ją "openings_general". Zawiera ona $149$ wartości unikalnych. Przeanalizujemy te otwarcia, których zostało rozegranych więcej niż $500$, czyli:
+
+```{r, echo=FALSE}
+agg_tbl <- df %>% group_by(openings_general) %>% 
+  summarise(total_count=n(),
+            .groups = 'drop')
+
+agg_tbl_ordered <-agg_tbl[order(agg_tbl$total_count, decreasing=TRUE),]
+agg_to_analize_tbl_ordered <- agg_tbl_ordered[agg_tbl_ordered$total_count >= 500, ]
+print(agg_to_analize_tbl_ordered)
+```
+Kolumna "total_count" oznacza liczbę rozegranych gier z wykorzystaniem danego otwarcia.
+
+
+## Analiza danych
+
+
+### Prawdopodobieństwo różnych zakończeń rozgrywki bez warunkowania.
+
+W celu rozważenia od czego zależy prawdopodobieństwo różnych zakończeń rozgrywki, najpierw oszacujemy to prawdopodobieństwo w ogólności. Liczba rozegranych partii wynosi $19618$, z czego gracz biały wygrał $9782$ razy, a czarny $8916$ razy.
+
+```{r, include=FALSE}
+games_count = sum(df$winner != "a")
+print(games_count)
+```
+
+```{r, include=FALSE}
+white_winner_count = sum(df$winner == "white")
+print(white_winner_count)
+```
+
+```{r, include=FALSE}
+black_winner_count = sum(df$winner == "black")
+print(black_winner_count)
+```
+Wynika z tego, że szacowane prawdopodobieństwo wygrania gracza białego wynosi w przybliżeniu 49,85%, gracza czarnego 45,40%, a remisu 4,75%.
+
+W dalszej części analizy sprawdzimy, jak to prawdopodobieństwo się zmienia, jeśli odpowiednio uwarunkujemy rozgrywkę. 
+
+### Warunkowanie otwarciem
+
+Przeanalizujemy jak zmienia się prawdopodobieństwo różnych wyników partii w zależności od otwarcia. Pod uwagę bierzemy dziesięć najpopularniejszych, gdzie dla każdego mamy co najmniej $500$ obserwacji. Obliczamy częstość wygranych oraz remisu dla poszczególnych otwarć.
+
+Przerywanymi liniami oznaczamy częstość poszczególnych wyników bez warunkowania: beżowa linia to częstość wygrywania gracza białego, brązowa czarnego, a szara remisu.
+
+```{r, echo=FALSE}
+probab = function(dat){
+  all_count <- sum(dat$winner != "a")
+  white_wins_count <- sum(dat$winner == "white")
+  black_wins_count <- sum(dat$winner == "black")
+  white_prob <-white_wins_count/all_count
+  black_prob <-black_wins_count/all_count
+  draw_prob <- 1 - white_prob - black_prob
+  
+  return(c(white_prob, black_prob, draw_prob))
+}
+
+top_openings <- agg_to_analize_tbl_ordered$openings_general
+
+probs_white <- vector()
+probs_black <- vector()
+probs_draw <- vector()
+
+for(i in 1:10){
+  opening_df <- df[df["openings_general"] == top_openings[i],] 
+  prob <- probab(opening_df)
+  probs_white[i] <- prob[1]
+  probs_black[i] <- prob[2]
+  probs_draw[i] <- prob[3]
+}
+
+probs_df <- data.frame(Otwarcie = top_openings, Biały_gracz = probs_white, Czarny_gracz = probs_black, Remis = probs_draw)
+probs_df_long <- gather(probs_df, value, win, c("Biały_gracz", "Czarny_gracz", "Remis"), factor_key=TRUE)
+
+ggplot(data=probs_df_long, aes(x=Otwarcie, y=win, fill=value)) + geom_bar(stat="identity", position="dodge", colour="black") +
+  theme(axis.text.x = element_text(angle=90), legend.title = element_blank()) +
+  scale_x_discrete(name ="") + 
+  scale_y_continuous(name ="Częstość różnych wyników") + 
+  geom_hline(yintercept=0.4985, color="#d9c5b2", linetype="dashed", linewidth=1) +
+  geom_hline(yintercept=0.4550, color="#6c584c", linetype="dashed", linewidth=1) +
+  geom_hline(yintercept=0.0475, color="#7e7f83", linetype="dashed", linewidth=1) + 
+  scale_fill_manual(labels=c('Wygrana białego', 'Wygrana czarnego', 'Remis'), values=c("#d9c5b2", "#6c584c", "#7e7f83"))
+```
+
+Z powyższego wykresu wynika, że biały gracz wygrywa statystycznie częściej niż dla średniej rozgrywki dla obrony Philidora ("Philidor Defense"), Otwarcia Angielskiego ("English Opening") oraz partii hiszpańskiej ("Ruy Lopez"). Szanse czarnego gracza na wygraną zwiększają się natomiast przy rozegraniu pozostałych z$~$analizowanych otwarć oprócz obrony Caro-Kann ("Caro-Kann Defense"), gdzie zmalała jednocześnie częstość wygrywania gracza białego, natomiast zwiększyła się częstość remisu.
+
+Przy dwóch z analizowanych otwarć gracz czarny nie wygrywał częściej niż gracz biały: przy obronie sycylijskiej ("Sicilian Defense") oraz otwarcia pionkiem hetmańskim ("Queen's Pawn Game").
+
+Aby sprawdzić dokładność naszych obliczeń oraz wysunąć wnioski z danych, dołożymy przedziały ufności utworzone za pomocą metody bootstrap na poziomie ufności równym $0,05$. 
+
+```{r, echo=FALSE}
+ggplot(data=top_df_long, aes(x=values, y=value, fill=win)) + geom_bar(stat="identity", position="dodge", colour="black") +
+  geom_errorbar(aes(ymin=bottom,
+                    ymax=top), position = position_dodge(0.9),color = "red",width=.05) +
+  theme(axis.text.x = element_text(angle=90), legend.title = element_blank()) +
+  scale_x_discrete(name ="") + 
+  scale_y_continuous(name ="Estymowane prawdopodobieństwo") + 
+  scale_fill_manual(labels=c('Wygrana białego', 'Wygrana czarnego', 'Remis'), values=c("#d9c5b2", "#6c584c", "#7e7f83"))
+```
+Okazuje się, że na poziomie ufności $0,05$ nie możemy stwierdzić dla wszystkich otwarć, który gracz ma większą szansę na wygraną. Konkretne wnioski możemy wysunąć jednak dla Otwarcia Angielskiego, Obrony Philidora oraz partii hiszpańskiej. Dla nich stwierdzamy na poziomie ufności $0,05$, iż prawdopodobieństwo wygrania białego gracza jest wyższe niż prawdopodobieństwo wygrania czarnego. Prawdopodobieństwo remisu nie różni się natomiast znacząco dla żadnego otwarcia.
+
+### Warunkowanie rankingiem białego
+
+Gracze mają różne poziomy rankingu, więc sprawdzimy jak wyglądają prawdopodobieństwa różnych zakończeń rozgrywki w zależności od rankingu białego gracza.
+
+Na początku zobaczmy, jak wygląda rozkład rankingu białego gracza, a jak czarnego, aby wykluczyć statystyczną przewagę jednego z nich.
+
+```{r,echo=FALSE}
+plot_white_ratig <- ggplot(data=df, mapping=aes(x=white_rating)) +  geom_histogram(bins=50,color='black', fill="#d9c5b2")+ 
+    labs(x = 'Ranking białego', y= 'Liczebność') # rozkĹ‚ad  rankingu biaĹ‚ego
+plot_black_rating <- ggplot(data=df, mapping=aes(x=black_rating)) +  geom_histogram(bins=50,color='black', fill="#6c584c")+ 
+    labs(x = 'Ranking czarnego', y="Liczebność") # rozkĹ‚ad  rankingu czarnego
+grid.arrange(plot_white_ratig,plot_black_rating)
+```
+Wykresy sugerują, że rozkład rankingu białego gracza i czarnego są bardzo podobne. Rodzi się pytanie, jak wyglądają ich średnie, mediany, wariancje, skośności czy kurtozy. 
+```{r, include=FALSE}
+mean(df$white_rating)
+mean(df$black_rating)
+median(df$white_rating)
+median(df$black_rating)
+var(df$white_rating)
+var(df$black_rating)
+skewness(df$white_rating)
+skewness(df$black_rating)
+kurtosis(df$white_rating)
+kurtosis(df$black_rating)
+```
+
+|           | biały    | czarny   |
+|-----------|----------|----------|
+| średnia   | 1596,15  | 1588,39  |
+| mediana   | 1567     | 1562     |
+| wariancja | 84221,18 | 84214,67 |
+| skośność  | 0,30     | 0,25     |
+| kurtoza   | 0,029    | -0,052   |
+
+
+Analizując statystyki opisowe zawarte w tabelce, możemy dojść do wniosku, że biały ma średnio większy ranking. Ta różnica wynosi jedynie około $8$ punktów, co przy średnim rankingu nieco mniejszym niż $1600$ jest znikomą przewagą. Dodatkowo możemy odczytać, że mediana białego jest o $5$ punktów większa od mediany czarnego co znowu jest małą różnicą w stosunku do mediany powyżej $1560$. Możemy zobaczyć, że biały ma  minimalnie większą wariancję, ale różni się tylko o $7$, co przy wariancji białego równej $84221,18$ nie jest znaczącą różnicą. Następnie możemy zauważyć, że rozkład rankingu czarnego ma mniejszą skośność, ale obydwa rozkłady mają na tyle małe skośności w stosunku do odchylenia standardowego, że możemy przyjąć, iż ich rozkłady są symetryczne. Estymowane kurtozy są na tyle blisko $0$, że możemy przyjąć, że rozkłady mają tyle samo danych odstających co rozkład normalny.
+
+Powyższa analiza statystyk opisowych pozwala stwierdzić, że biały ma średnio przewagę, która nie jest jednak znacząca w naszej analizie.
+
+By móc analizować wpływ rankingu białego na prawdopodobieństwo różnych zakończeń rozgrywki podzielimy ranking na przedziały. Każdy przedział ma szerokość $100$. Przykładowo do przedziału, który nazwiemy $1400$, trafiają obserwacje, dla których gracz biały ma ranking większy lub równy $1300$ i mniejszy niż $1400$.
+
+Sprawdzimy teraz jak wyglądają prawdopodobieństwa końcowych wyników, w zależności od przedziału rankingu białego gracza.
+```{r,echo=FALSE}
+new_df = read.csv("winner_depend_ranting.csv")
+plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
+    labs(x = 'Ranking białego', y = 'P' , title="Wygrana białego")
+plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity',color='black', fill="#6c584c") + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
+    labs(x = 'Raking białego', y = 'P' , title="Wygrana czarnego") + ylim(0,1) 
+plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity',color='black', fill="#7e7f83")+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
+    labs(x = 'Ranking białego', y = 'P' , title="Remis") 
+grid.arrange(plot_white,plot_black,plot_draw) 
+```
+Analizując wykres możemy zauważyć, że wraz ze wzrostem rankingu białego gracza rośnie także prawdopodobieństwo jego wygranej, natomiast maleje prawdopodobieństwo wygrania czarnego. Estymowane wartości prawdopodobieństwa remisu sugerują, że jego prawdopodobieństwo rośnie. Natomiast przedziały ufności dla wysokich rankingów są na tyle szerokie, że nie możemy wysunąć konkretnych wniosków na poziomie ufności $0,05$.
+
+### Warunkowanie różnicą rankingu białego i czarnego gracza
+
+Analizowaliśmy jak wyglądają prawdopodobieństwa zakończenia partii od rankingu białego gracza, ale ranking czarnego też powinien mieć na nie wpływ. Dodamy nową kolumnę, która będzie oznaczać różnice między rankingiem białego a czarnego gracza. Rozkład różnic w rankingu wygląda następująco:
+```{r,echo=FALSE}
+
+ggplot(data=df,aes(x=ranting_difrents)) + geom_histogram(bins=50, color='black') + labs(x= 'Różnica w rankingu', y='Liczebnść')
+```
+Jak możemy zobaczyć rozkład różnic w rankingu jest niemal symetryczny, a średnia wartość jest w okolicach $0$. Dokładnie wynosi $7,56$. Podzielimy różnice na kategorię o długości $100$ tak jak w przypadku rankingu gracza białego. Zobaczymy teraz jak wyglądają prawdopodobieństwa zakończenia partii w zależności od przedziału różnic. Do analizy bierzemy przedziały, które zawierają ponad $10$ gier.
+```{r,echo=FALSE}
+new_df = read.csv("winner_depend_diffrents_ranting.csv")
+plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
+    labs(x = 'Różnica w rankingu', y = 'P' , title="Wygrana białego")
+plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity',color='black', fill="#6c584c") + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
+    labs(x = 'Różnica w rankingu', y = 'P' , title="Wygrana czarnego") 
+plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity',color='black', fill="#7e7f83")+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
+    labs(x = 'Różnica w rankingu', y = 'P' , title="Remis") 
+grid.arrange(plot_white,plot_black,plot_draw) 
+```
+Z powyższych wykresów wynika, że wraz ze wzrostem różnicy w rankingu rośnie prawdopodobieństwo wygranej białego gracza, natomiast maleje szansa na wygranie czarnego. W przypadku remisu ciężko wywnioskować zależność.
+
+### Warunkowanie ilością ruchów
+
+Partie w szachach mają różne długości. Sprawdzimy najpierw ile trwają partie w naszych grach.
+
+```{r,echo=FALSE}
+
+ggplot(data=df,aes(x=turns)) + geom_histogram(bins=50, color='black') + labs(x= 'Ilość ruchów ', y='Liczebnść') 
+
+```
+Jak możemy zauważyć, większość gier trwa mniej niż $100$ ruchów. Nasze dane podzielimy na przedziały o długości $10$ gdzie pierwszy przedział to $[0,10)$. Sprawdzimy jak wyglądają prawdopodobieństwa różnych zakończeń partii w zależności od przedziałów ilości posunięć. Bierzemy pod uwagę przedziały, które zawierają ponad 10 gier.
+
+```{r, echo=FALSE}
+new_df = read.csv("winner_depend_turns.csv")
+plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
+    labs(x = 'Ilość ruchów', y = 'P' , title="Wygrana białego")
+plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity',color='black', fill="#6c584c") + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
+    labs(x = 'Ilość ruchów', y = 'P' , title="Wygrana czarnego") 
+plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity',color='black', fill="#7e7f83")+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
+    labs(x = 'Ilość ruchów', y = 'P' , title="Remis") 
+grid.arrange(plot_white,plot_black,plot_draw) 
+```
+z wykresów możemy odczytać że prawdopodobieństwo wygrania białych maleje wraz z kolejnymi ruchami, natomiast prawdopodobieństwo wygrania czarnych rośnie do około $100$ ruchu, by potem maleć. Natomiast prawdopodobieństwo remisu rośnie wraz z kolejnymi posunięciami. 
+
+
+## Wnioski 
+Z analizy wynika, że na pozytywny wpływ na prawdopodobieństwo wygranej białego gracza mają: 
+- rozegranie obrony Philidora, Otwarcia Angielskiego oraz partii hiszpańskiej
+- jego wysoki ranking
+- przewaga rankingowa nad czarnym graczem
+- szybkie zakończenie rozgrywki.
+
+Pozytywnie na prawdopodobieństwo wygrania czarnego gracza (i jednocześnie negatywnie na wygranie białego) wpływają:
+- rozegranie obrony francuskiej, partii włoskiej, otwarcia pionkiem królewskim, otwarcia pionkiem hetmańskim, obrony skandynawskiej oraz obrony sycylijskiej
+- niski ranking białego gracza
+- przewaga rankingowa czarnego gracza nad białym
+- średni czas trwania rozgrywki, czyli około $50$-$100$ ruchów.
+
+Prawdopodobieństwo remisu zwiększa się znacząco jedynie dla długich rozgrywek (powyżej $100$ ruchów).
+
+Analizę można rozszerzyć o dodatkowe warunkowania.
