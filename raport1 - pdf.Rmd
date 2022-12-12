@@ -186,7 +186,7 @@ top_df_long["top"] <- win_top
 
 ## Wprowadzenie
 
-Strona internetowa Lichess jest drugą co do wielkości platformą na świecie, która umożliwia grę w szachy online. Użytkownicy mogą grać z$~$komputerem lub między sobą. Każdy gracz ma przypisany ranking (początkowo ma on wartość 1500), który jest ustalany na podstawie jego umiejętności. Jeśli użytkownik rozgrywa partię "rankingową", w jej wyniku jego ranking rośnie lub maleje.
+Strona internetowa [Lichess](https://lichess.org/) jest drugą co do wielkości platformą na świecie, która umożliwia grę w szachy online. Użytkownicy mogą grać z$~$komputerem lub między sobą. Każdy gracz ma przypisany ranking (początkowo ma on wartość 1500), który jest ustalany na podstawie jego umiejętności. Jeśli użytkownik rozgrywa partię "rankingową", w jej wyniku jego ranking rośnie lub maleje.
 
 Dane, które zostaną poddane analizie, zawierają informacje o$~$ponad 20 000$~$rozgrywkach szachowych ze strony Lichess Games. Dostępne są na witrynie kaggle. Składają się z następujących kolumn:
 
@@ -195,7 +195,7 @@ Dane, które zostaną poddane analizie, zawierają informacje o$~$ponad 20 000$~
 - rated ("character") - wartość "True" lub "False" w$~$zależności od tego, czy partia jest "rankingowa"
 - created_at ("numeric") - czas rozpoczęcia gry
 - last_move_at ("numeric") - czas zakończenia gry
-- turns ("numeric") - liczba rozegranych tur
+- turns ("numeric") - liczba posunięć
 - victory_status ("character") - status zakończenia gry: "mate" dla zakończenia matem, "resign" dla zakończenia przez poddanie się jednej ze stron, "draw" dla remisu lub "outoftime" dla rozgrywki zakończonej z powodu upływu czasu
 - winner ("character") - zwycięzca gry: "white", jeśli wygrał gracz biały, "black", jeśli czarny lub "draw" w$~$przypadku remisu
 - increment_code ("character") - składa się z dwóch liczb rozdzielonych znakiem "+"; pierwsza oznacza liczbę minut przypadających na gracza na wszystkie jego ruchy, druga liczbę sekund, o którą zwiększa się czas gracza po wykonaniu ruchu
@@ -208,14 +208,16 @@ Dane, które zostaną poddane analizie, zawierają informacje o$~$ponad 20 000$~
 - opening_name ("character") - nazwa rozgranego otwarcia
 - opening_ply ("character") - liczba ruchów w$~$fazie otwarcia
  
-Celem analizy będzie odpowiedzenie na pytanie - jakie jest prawdopodobieństwo różnych zakończeń gry: wygranej białego gracza, czarnego lub remisu? Będziemy rozważać ten problem pod kątem rozegranego otwarcia, rankingu graczy, różnicy w$~$rankingu między graczem białym i$~$czarnym oraz liczby tur w$~$partii. Użyjemy metody bootstrap do stworzenia przedziałów ufności estymowanego prawdopodobieńśtwa. 
+Celem analizy będzie odpowiedzenie na pytanie - jakie jest prawdopodobieństwo różnych zakończeń gry: wygranej białego gracza, czarnego lub remisu? Będziemy rozważać ten problem pod kątem rozegranego otwarcia, rankingu graczy, różnicy w$~$rankingu między graczem białym i$~$czarnym oraz liczby posunięć w$~$partii. 
+
+Użyjemy metody bootstrap do stworzenia przedziałów ufności estymowanego prawdopodobieńśtwa. Będą to przedziały percentylowe, zaznaczone na wykresach czerwonymi kreskami. 
 
 
 ## Obróbka danych
 
 ### Usunięcie niepotrzebnych kolumn
 
-Nasze dane zawierają dużo kolumn z, których nie korzystmy dlatego usuniemy niepotrzebne kolumny w wyniku czego nasza tabela z danymi wygląda następująco.
+Nasze dane zawierają dużo kolumn, z których nie korzystmy. Usuniemy niepotrzebne kolumny, w wyniku czego nasza tabela z danymi wygląda następująco:
 ```{r,echo=FALSE}
 columns <- c('turns','winner','white_rating','black_rating','opening_name')
 print(head(df[columns]))
@@ -225,13 +227,12 @@ W następnym kroku usuwamy duplikujące się wiersze oraz wiersze, w których ni
 ```{r , echo=FALSE}
 df <- distinct(df)
 df <- na.omit(df)
-
 ```
 
 ### Zastosowanie One Hot Encoding dla kolumny "winner"
 
-Wynik naszej parti jest zawarty w kolumnie "winner". Ta kolumna ma $3$ wartości: "white" , "black" i "draw".
-Dla ułatwienia analizy stworzymy $3$ dodatkowe kolumny o odpowiednich nazwach "white_win","black_win","draw". Każda z tych kolumn ma wartość $1$ lub $0$. Gdy w kolumnie "winner" jest "white" to $1$ przypisujemy do "white_win", jeśli "black" to do "black_win", natomiast jeśli "draw" to do "draw". W przeciwnych przypadkach przypisujemy $0$.
+Wynik naszej partii jest zawarty w kolumnie "winner". Ta kolumna zawiera $3$ wartości: "white" , "black" i "draw".
+Dla ułatwienia analizy stworzymy $3$ dodatkowe kolumny o odpowiednich nazwach "white_win", "black_win" oraz "draw". Każda z tych kolumn ma wartość $1$ lub $0$. Gdy w kolumnie "winner" znajduje się "white", to $1$ przypisujemy do "white_win", jeśli "black" to do "black_win", natomiast jeśli "draw" to do "draw". W przeciwnych przypadkach przypisujemy $0$.
 ```{r}
 df <-  df %>% mutate(
     white_win = ifelse(winner =='white',1,0),

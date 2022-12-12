@@ -7,8 +7,6 @@ library("boot")
 
 df <- read.csv(file = "C:/Users/Martyna/Studia/Pakiety statystyczne/raport1/chess_games.csv")
 
-rated_true <- df[df$rated == "True", ]
-rated_false <- df[df$rated == "False", ]
 
 openings <- vector()
 
@@ -68,8 +66,7 @@ for(i in 1:nrow(df)){
 
 
 
-ggplot(df, aes(white_rating)) + geom_histogram()
-ggplot(df, aes(black_rating)) + geom_histogram()
+
 
 df_long_rating <- gather(df, player, rating, c("white_rating", "black_rating") ,factor_key=TRUE)
 

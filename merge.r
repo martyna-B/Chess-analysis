@@ -23,7 +23,8 @@ df <- cbind(df,rating_diffrents_cat=(df$ranting_difrents %/% 100 + 1)* 100)
 df <- cbind(df,turns_cat=(df$turns %/% 10 + 1)* 10)
 
 
-#openingi
+#openingi -----
+#tworzenie kolumny "openings_general"
 openings <- vector()
 
 for(i in 1:nrow(df)){
@@ -60,6 +61,8 @@ for(i in 1:nrow(df)){
 
 df["openings_general"] <- openings
 
+#przedzia³y ufnoœci dla otwaræ
+
 agg_tbl <- df %>% group_by(openings_general) %>% 
   summarise(total_count=n())
 
@@ -70,8 +73,6 @@ agg_to_analize_tbl_ordered <- agg_tbl_ordered[agg_tbl_ordered$total_count >= 500
 top_openings <- agg_to_analize_tbl_ordered$openings_general
 
 top_openings_df <- filter(df, df$openings_general %in% top_openings)
-
-
 
 
 generate_data_openings <- function(df, column){ 
@@ -106,7 +107,6 @@ generate_data_openings <- function(df, column){
       draw <- append(draw, draw_ciboot$t0)
       draw_bottom <- append(draw_bottom, draw_ciboot$perc[4])
       draw_top <- append(draw_top, draw_ciboot$perc[5])
-      # print(draw_bottom)      
     }
   }
   new_df <- data.frame(values, white_win,white_win_top,white_win_bottom, black_win,black_win_top,black_win_bottom,draw,draw_bottom,draw_top)
@@ -114,8 +114,7 @@ generate_data_openings <- function(df, column){
 }
 
 
-
-
+#wykres dla otwaræ bez przedzia³ów ufnoœci
 top_df <- generate_data_openings(top_openings_df, top_openings_df$openings_general)
 
 top_df_long <- gather(top_df, win, value, c(white_win, black_win, draw), factor_key=TRUE)
@@ -150,7 +149,7 @@ ggplot(data=top_df_long, aes(x=values, y=value, fill=win)) + geom_bar(stat="iden
                     ymax=top), position = position_dodge(0.9)) +
   theme(axis.text.x = element_text(angle=90), legend.title = element_blank()) +
   scale_x_discrete(name ="") + 
-  scale_y_continuous(name ="Estymowane prawdopodobieñstwo") + 
+  scale_y_continuous(name ="Czêstoœæ ró¿nych wyników") + 
   scale_fill_discrete(labels=c('Wygrana bia³ego', 'Wygrana czarnego', 'Remis'))
 
 #Inne data framy do generowania wykresï¿½w
