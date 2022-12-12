@@ -221,7 +221,7 @@ columns <- c('turns','winner','white_rating','black_rating','opening_name')
 print(head(df[columns]))
 ```
 ### Usunięcie duplikatów i wierszy z brakiem danych
-W następnym kroku usuwamy duplikujące się wierszę oraz wierszę w których występuje brak danych
+W następnym kroku usuwamy duplikujące się wiersze oraz wiersze, w których nie ma danych.
 ```{r , echo=FALSE}
 df <- distinct(df)
 df <- na.omit(df)
@@ -230,8 +230,8 @@ df <- na.omit(df)
 
 ### Zastosowanie One Hot Encoding dla kolumny "winner"
 
-Wynik naszej parti jest zawarty w kolumnie "winner".Ta kolumna ma $3$ wartości: "white" , "black" i "draw".
-Dla ułatwienia analizy stworzymy $3$ dodtakowe kolumny o odpowiedni nazwach "white_win","black_win","draw". Każda z tych kolumn ma wartość $1$ lub $0$. Gdy w kolumnie "winner" jest "white" to $1$ przypisujemy do "white_win", jeśli "black" to do "black_win" natomiast jeśli "draw" to do "draw". W przeciwnych przypadkach przypisujemy $0$.
+Wynik naszej parti jest zawarty w kolumnie "winner". Ta kolumna ma $3$ wartości: "white" , "black" i "draw".
+Dla ułatwienia analizy stworzymy $3$ dodatkowe kolumny o odpowiednich nazwach "white_win","black_win","draw". Każda z tych kolumn ma wartość $1$ lub $0$. Gdy w kolumnie "winner" jest "white" to $1$ przypisujemy do "white_win", jeśli "black" to do "black_win", natomiast jeśli "draw" to do "draw". W przeciwnych przypadkach przypisujemy $0$.
 ```{r}
 df <-  df %>% mutate(
     white_win = ifelse(winner =='white',1,0),
@@ -361,8 +361,8 @@ Okazuje się, że na poziomie ufności 0,05 nie możemy stwierdzić dla każdego
 
 ### Warunkowanie rankningiem białego
 
-Jak wiemy gracze mają różne poziomy rankigi wię zobaczymy jak wyglądają prawdopodobieństwa zakończeń w zależności od 
-rankingu białego. Napoczątku zobaczmy jak wygląda rozkład rankingu białego a jak czarnego.
+Jak wiemy gracze mają różne poziomy rankingu więc zobaczymy jak wyglądają prawdopodobieństwa zakończeń w zależności od 
+rankingu białego. Na początku zobaczmy jak wygląda rozkład rankingu białego a jak czarnego.
 
 ```{r,echo=FALSE}
 plot_white_ratig <- ggplot(data=df, mapping=aes(x=white_rating)) +  geom_histogram(bins=50,colour='black')+ 
@@ -371,19 +371,9 @@ plot_black_rating <- ggplot(data=df, mapping=aes(x=black_rating)) +  geom_histog
     labs(x = 'Ranking czarnego', y="Liczebność") # rozkĹ‚ad  rankingu czarnego
 grid.arrange(plot_white_ratig,plot_black_rating)
 ```
-Z wykresów możemy odzczytać, że rozkład rankigu białego i rankingu czarnego są bardzo podobne. Teraz rodzi się pytanie jak wyglądaja ich średnia,mediana  wariancja, skośnoś czy kurtoza 
-```{r}
-mean(df$white_rating)
-mean(df$black_rating)
-median(df$white_rating)
-median(df$black_rating)
-var(df$white_rating)
-var(df$black_rating)
-skewness(df$white_rating)
-skewness(df$black_rating)
-kurtosis(df$white_rating)
-kurtosis(df$black_rating)
-```
+Z wykresów możemy odczytać, że rozkład rankigu białego i rankingu czarnego są bardzo podobne. Teraz rodzi się pytanie jak wyglądaja ich średnie, mediany  wariancje, skośności czy kurtozy 
+
+
 
 |           | biały    | czarny   |
 |-----------|----------|----------|
@@ -393,10 +383,13 @@ kurtosis(df$black_rating)
 | skośność  | 0,30     | 0,25     |
 | kurtoza   | 0,029    | -0,052   |
 
-Tak więc analizując statystyki opisowe możemy dojść do wniosku że biały ma średnio większy ranking ale tylko o około 8 punktów rankingowych co przy średnim rankingu nieco mniejszym niż 1600 jest znikomą przewagą,dodatkowo możemy odzczytać że mediana białego jest o $5$ punktów większa od mediany czarnego co znowu jest małą róznicą przy medianie powyżej 1560. Możemy zobaczyć także biały ma znowu minimalnie większą wariancję ale różni się tylko o $7$ co przy wariancji białego równej $84221.18$ nie jest żadną różnicą. Następnie możemy załważyć, że rozkład rankingu czarnego ma mniejszą skośność ale obydwa rozkłady mają na tyle małe skośności w stosunku do odchylenia standardowego, że możemy przyjąć że ich rozkłady są symetryczne. Jeśli chodzi o kurtozę to wyniki jej są na tyle blisko $0$, że możemy przyjąć, że rozkłady mają tyle samo danych odstających co rozkład normalny.
+Tak więc analizując statystyki opisowe zawarte w tabelce możemy dojść do wniosku, że biały ma średnio większy ranking ale tylko o około 8 punktów rankingowych co przy średnim rankingu nieco mniejszym niż 1600 jest znikomą przewagą. Dodatkowo możemy odzczytać, że mediana białego jest o $5$ punktów większa od mediany czarnego co znowu jest małą róznicą w stosunku do mediany powyżej 1560. Możemy zobaczyć, że biały ma  minimalnie większą wariancję ale różni się tylko o $7$ co przy wariancji białego równej $84221.18$ nie jest znaczącą różnicą. Następnie możerozkład rankingu czarnego ma mniejszą skośność ale obydwa rozkłady mają na tyle małe skośności w stosunku do odchylenia standardowego, że możemy przyjąć że ich rozkłady są symetryczne. Jeśli chodzi o kurtozę to wyniki jej są na tyle blisko $0$, że możemy przyjąć, że rozkłady mają tyle samo danych odstających co rozkład normalny.
 
-Z racji, że rankig jest zmienną ciągłą to podzielimy rankig białego na przedziały np $[1300;1400)$ i taki przedział będziemy ozanczać jako $1300$. Każdy przedział ma szerokość $100$. Dodatkowo usuwamy przedziały gdzie liczba gier wynosi mniej niż 11
-Sprawdzimy teraz jak wyglądają Prawdopodobieńtwa końcowych wyników w zależności od przwedziału rankingu białego. Na wykresie czerwone krski pionowe to są przedziały ufności dla prawdopodobieństwa wygranej.
+Powyższa analiza statystyk opisowych pozwala swierdzć,że biały ma średnio przewagę, która nie 
+
+Z racji, że rankig jest zmienną ciągłą to podzielimy rankig białego na przedziały np $[1300;1400)$ i taki przedział będziemy ozanczać jako $1400$. Każdy przedział ma szerokość $100$. Dodatkowo usuwamy przedziały gdzie liczba gier wynosi mniej niż $10$
+
+Sprawdzimy teraz jak wyglądają prawdopodobieńtwa końcowych wyników w zależności od przwedziału rankingu białego. Na wykresie czerwone krski pionowe to są przedziały ufność obliczone za pomocą bootstrapu na poziomie ufności $\alpha = 0,05$ dla prawdopodobieństwa wygranej.
 ```{r,echo=FALSE}
 new_df = read.csv("winner_depend_ranting.csv")
 plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
@@ -407,16 +400,16 @@ plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity'
     labs(x = 'Ranking białego', y = 'P' , title="Remis") 
 grid.arrange(plot_white,plot_black,plot_draw) 
 ```
-Analizując wykres możemy załważyć, że waz ze wzrostem rankingu białego rośnie jego prawdopodobieństwo wygranej, natomias maleje prawdopodobieństwo wygrania czarnego. Możemy też odczytać że prawdopodobieństwo remisu rośnie, ale może to być nikoniecznie stwierdzenie prawdziwe ponieważ patrząc na średnie można tak wnioskować natmiast patrząc na przedziały ufność średniej niekoniecznie ponieważ przy wysokich rankingach się zawierają w sobię więc lepiej stwierdzić, że nie wiadomo jaki ma wpływ. 
+Analizując wykres możemy załważyć, że waz ze wzrostem rankingu białego rośnie także prawdopodobieństwo wygranej białego, natomias maleje prawdopodobieństwo wygrania czarnego. Możemy też odczytać, że prawdopodobieństwo remisu rośnie, ale może to być nikoniecznie stwierdzenie prawdziwe, ponieważ patrząc na średnie można tak wnioskować, natomiast patrząc na przedziały ufność średniej niekonieczni,e ponieważ przy wysokich rankingach się zawierają w sobię więc lepiej stwierdzić, że nie wiadomo jaki ma wpływ ranking białego. 
 
 ### Warunkowanie różnicą rankigu białego i czarnego gracza
 
-Analizowaliśmy jak wyglądają prawdopodobieństwa zakończenia parti od rankingu białego, ale ranking czarnego powinien mieć też wpływ więc Dodamy nową kolumnę, która będzie oznaczać różnice między rankingiem białego i czarnego. Rozkład różnic w rankigu wygląda następująco:
+Analizowaliśmy jak wyglądają prawdopodobieństwa zakończenia parti od rankingu białego, ale ranking czarnego powinien mieć też wpływ. Dodamy nową kolumnę, która będzie oznaczać różnice między rankingiem białego a czarnego. Rozkład różnic w rankigu wygląda następująco:
 ```{r,echo=FALSE}
 
 ggplot(data=df,aes(x=ranting_difrents)) + geom_histogram(bins=50, color='black') + labs(x= 'Różnica w rankingu', y='Liczebnść')
 ```
-Jak możemy zobaczyć rozkład różnic w rankingu jest niemal symetryczny a średnią wartość jest w okolicach $0$ a dokładnie wynosi $7.56$. Możemy zobaczyć, że wartość różnic rankingu zawierają się w przedziale $[-1000,1000]$ więc podzielimy różnice na kategorię o długości $100$ tak jak w przypadku rankingu bialego. Zobaczymy teraz jak wyglądają prawdopodobieństwa zakończenia parti w zależności od przeziału różnic dla przedziałów które zawierają co najmniej 10 gier.
+Jak możemy zobaczyć rozkład różnic w rankingu jest niemal symetryczny a średnią wartość jest w okolicach $0$ a dokładnie wynosi $7.56$. Podzielimy różnice na kategorię o długości $100$ tak jak w przypadku rankingu bialego. Zobaczymy teraz jak wyglądają prawdopodobieństwa zakończenia parti w zależności od przedziału różnic. Do analizy bierzemy przedziały, które zawierają ponad $10$ gier.
 ```{r,echo=FALSE}
 new_df = read.csv("winner_depend_diffrents_ranting.csv")
 plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
@@ -427,7 +420,7 @@ plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity'
     labs(x = 'Różnica w rankingu', y = 'P' , title="Remis") 
 grid.arrange(plot_white,plot_black,plot_draw) 
 ```
-w powyższych wykresów wynika, że wraz ze wzrostem różnicy w rankingu rośnie prawdopodobieństwop wygranej białego, natomiast maleje szansa na wygranie czarnego. W przypadku remisu ciężko wywnioskować zależność.
+z powyższych wykresów wynika, że wraz ze wzrostem różnicy w rankingu rośnie prawdopodobieństwop wygranej białego, natomiast maleje szansa na wygranie czarnego. W przypadku remisu ciężko wywnioskować zależność.
 
 ### Warunkowanie ilością ruchów
 
@@ -438,7 +431,7 @@ Jak wiemy partie w szachach mają różne długości. Sprawdzimy najpierw ile tr
 ggplot(data=df,aes(x=turns)) + geom_histogram(bins=50, color='black') + labs(x= 'Ilość ruchów ', y='Liczebnść') 
 
 ```
-jak możemy załważyć większość gier kończy się po $100$ ruchach. Z powodu, że nasze dane są ciągłe podzielimy je na przedziały o długości $10$ gdzie pierwszy przedział to $[0,10)$. Sprawdzimy jak wyglądają prawdopodobieństwa zakończenia parti w zależności od przeziałów ilości posunięc dla przedziałów które zawierają co najmniej 10 gier
+jak możemy załważyć większość gier kończy się po $100$ ruchach. Nasze dane podzielimy na przedziały o długości $10$ gdzie pierwszy przedział to $[0,10)$. Sprawdzimy jak wyglądają prawdopodobieństwa zakończenia parti w zależności od przedziałów ilości posunięc dla przedziałów które zawierają ponad 10 gier.
 
 ```{r, echo=FALSE}
 new_df = read.csv("winner_depend_turns.csv")
@@ -450,4 +443,4 @@ plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity'
     labs(x = 'Ilość ruchów', y = 'P' , title="Remis") 
 grid.arrange(plot_white,plot_black,plot_draw) 
 ```
-z wykresów możemy odzczytać że prawdpodobieństwo wygrania białych maleje wraz z kolejnymi róchami, natomiast prawdopodobieństwo wygrania czarnych rośnie do około $100$ ruchów by potem maleć. Natomiast prawdopodobieństwo remisu rośnie wraz z kolejnymi posunięciami. 
+z wykresów możemy odzczytać że prawdpodobieństwo wygrania białych maleje wraz z kolejnymi ruchami, natomiast prawdopodobieństwo wygrania czarnych rośnie do około $100$ ruchów, by potem maleć. Natomiast prawdopodobieństwo remisu rośnie wraz z kolejnymi posunięciami. 
