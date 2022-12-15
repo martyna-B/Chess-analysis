@@ -6,19 +6,19 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE)cd Studia
 ```
 
 ```{r, include=FALSE}
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 df <- read.csv(file = "chess_games.csv")
 
-
 library(reshape2)
 library('boot')
 library('gridExtra')
 library(e1071)
 library("stringr")
+library("emojifont")
 library("ggplot2")
 library(tidyr)
 library(dplyr)
