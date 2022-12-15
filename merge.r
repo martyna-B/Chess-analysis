@@ -200,6 +200,7 @@ generate_data <- function(df, column, place){
     }
     new_df <- data.frame(values, white_win,white_win_top,white_win_bottom, black_win,black_win_top,black_win_bottom,draw,draw_bottom,draw_top)
     write_csv(new_df, place)
+    return(new_df)
 }
 #-------------------------------------------------------------
 
