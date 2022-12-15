@@ -1,5 +1,5 @@
 ---
-title: "analiza_partii_szachowych"
+title: "Analiza partii szachowych"
 author: "Martyna Bielec, Maciej Karczewski"
 date: "`r Sys.Date()`"
 output: pdf_document
@@ -393,6 +393,7 @@ Powyższa analiza statystyk opisowych pozwala stwierdzić, że biały ma średni
 By móc analizować wpływ rankingu białego na prawdopodobieństwo różnych zakończeń rozgrywki podzielimy ranking na przedziały. Każdy przedział ma szerokość $100$. Przykładowo do przedziału, który nazwiemy $1400$, trafiają obserwacje, dla których gracz biały ma ranking większy lub równy $1300$ i mniejszy niż $1400$.
 
 Sprawdzimy teraz jak wyglądają prawdopodobieństwa końcowych wyników, w zależności od przedziału rankingu białego gracza.
+
 ```{r,echo=FALSE}
 new_df = read.csv("winner_depend_ranting.csv")
 plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
@@ -403,6 +404,7 @@ plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity'
     labs(x = 'Ranking białego', y = 'P' , title="Remis") 
 grid.arrange(plot_white,plot_black,plot_draw) 
 ```
+
 Analizując wykres możemy zauważyć, że wraz ze wzrostem rankingu białego gracza rośnie także prawdopodobieństwo jego wygranej, natomiast maleje prawdopodobieństwo wygrania czarnego. Estymowane wartości prawdopodobieństwa remisu sugerują, że jego prawdopodobieństwo rośnie. Natomiast przedziały ufności dla wysokich rankingów są na tyle szerokie, że nie możemy wysunąć konkretnych wniosków na poziomie ufności $0,05$.
 
 ### Warunkowanie różnicą rankingu białego i czarnego gracza
