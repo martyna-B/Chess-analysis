@@ -23,7 +23,6 @@ library("emojifont")
 library("ggplot2")
 library(tidyr)
 library(dplyr)
-library("bookdown")
 #library('tidyverse')
 
 df <- na.omit(df)
@@ -370,9 +369,9 @@ Na początku zobaczmy, jak wygląda rozkład rankingu białego gracza, a jak cza
 
 ```{r, echo=FALSE}
 plot_white_ratig <- ggplot(data=df, mapping=aes(x=white_rating)) +  geom_histogram(bins=50,color='black', fill="#d9c5b2")+ 
-    labs(x = 'Ranking białego', y= 'Liczebność') # rozkĹ‚ad  rankingu biaĹ‚ego
+    labs(x = 'Ranking białego gracza', y= 'Liczebność', title="Rozkład rankingu białego gracza") # rozkĹ‚ad  rankingu biaĹ‚ego
 plot_black_rating <- ggplot(data=df, mapping=aes(x=black_rating)) +  geom_histogram(bins=50,color='black', fill="#6c584c")+ 
-    labs(x = 'Ranking czarnego', y="Liczebność") # rozkĹ‚ad  rankingu czarnego
+    labs(x = 'Ranking czarnego gracza', y="Liczebność", title="Rozkład rankingu czarnego gracza") # rozkĹ‚ad  rankingu czarnego
 grid.arrange(plot_white_ratig,plot_black_rating)
 ```
 
@@ -416,11 +415,11 @@ if (file.exists("winner_depend_ranting.csv")){
 }
 
 plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
-    labs(x = 'Ranking białego', y = 'P' , title="Wygrana białego")
+    labs(x = 'Ranking białego gracza', y = 'P' , title="Wygrana białego gracza")
 plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity',color='black', fill="#6c584c") + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
-    labs(x = 'Raking białego', y = 'P' , title="Wygrana czarnego") + ylim(0,1) 
+    labs(x = 'Raking białego gracza', y = 'P' , title="Wygrana czarnego gracza") + ylim(0,1) 
 plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity',color='black', fill="#7e7f83")+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
-    labs(x = 'Ranking białego', y = 'P' , title="Remis") 
+    labs(x = 'Ranking białego gracza', y = 'P' , title="Remis") 
 grid.arrange(plot_white,plot_black,plot_draw) 
 ```
 
@@ -431,7 +430,7 @@ Analizując wykres możemy zauważyć, że wraz ze wzrostem rankingu białego gr
 Analizowaliśmy jak wyglądają prawdopodobieństwa zakończenia partii od rankingu białego gracza, ale ranking czarnego też powinien mieć na nie wpływ. Dodamy nową kolumnę, która będzie oznaczać różnice między rankingiem białego a czarnego gracza. Rozkład różnic w rankingu wygląda następująco:
 ```{r,echo=FALSE}
 
-ggplot(data=df,aes(x=ranting_difrents)) + geom_histogram(bins=50, color='black') + labs(x= 'Różnica w rankingu', y='Liczebnść')
+ggplot(data=df,aes(x=ranting_difrents)) + geom_histogram(bins=50, color='black') + labs(x= 'Różnica w rankingu', y='Liczebnść', title="Histogram różnicy w rankingu między graczami")
 ```
 Jak możemy zobaczyć rozkład różnic w rankingu jest niemal symetryczny, a średnia wartość jest w okolicach $0$. Dokładnie wynosi $7,56$. Podzielimy różnice na kategorię o długości $100$ tak jak w przypadku rankingu gracza białego. Zobaczymy teraz jak wyglądają prawdopodobieństwa zakończenia partii w zależności od przedziału różnic. Do analizy bierzemy przedziały, które zawierają ponad $10$ gier.
 ```{r,echo=FALSE}
@@ -442,9 +441,9 @@ if (file.exists("data/winner_depend_diffrents_ranting.csv")){
 }
 
 plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
-    labs(x = 'Różnica w rankingu', y = 'P' , title="Wygrana białego")
+    labs(x = 'Różnica w rankingu', y = 'P' , title="Wygrana białego gracza")
 plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity',color='black', fill="#6c584c") + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
-    labs(x = 'Różnica w rankingu', y = 'P' , title="Wygrana czarnego") 
+    labs(x = 'Różnica w rankingu', y = 'P' , title="Wygrana czarnego gracza") 
 plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity',color='black', fill="#7e7f83")+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
     labs(x = 'Różnica w rankingu', y = 'P' , title="Remis") 
 grid.arrange(plot_white,plot_black,plot_draw) 
@@ -457,7 +456,7 @@ Partie w szachach mają różne długości. Sprawdzimy najpierw ile trwają part
 
 ```{r,echo=FALSE}
 
-ggplot(data=df,aes(x=turns)) + geom_histogram(bins=50, color='black') + labs(x= 'Ilość ruchów ', y='Liczebnść') 
+ggplot(data=df,aes(x=turns)) + geom_histogram(bins=50, color='black') + labs(x= 'Ilość ruchów w partii ', y='Liczebnść', title="Histogram ilości ruchów w partii") 
 
 ```
 Jak możemy zauważyć, większość gier trwa mniej niż $100$ ruchów. Nasze dane podzielimy na przedziały o długości $10$ gdzie pierwszy przedział to $[0,10)$. Sprawdzimy jak wyglądają prawdopodobieństwa różnych zakończeń partii w zależności od przedziałów ilości posunięć. Bierzemy pod uwagę przedziały, które zawierają ponad 10 gier.
@@ -470,11 +469,11 @@ if (file.exists("data/winner_depend_turns.csv")){
 }
 
 plot_white <- ggplot(data=new_df,aes(x=values,y=white_win))  + geom_bar(stat='identity',color='black', fill="#d9c5b2")+ geom_errorbar(aes(ymin=white_win_bottom,ymax=white_win_top),color = "red",width=.05)+
-    labs(x = 'Ilość ruchów', y = 'P' , title="Wygrana białego")
+    labs(x = 'Ilość ruchów w partii', y = 'P' , title="Wygrana białego gracza")
 plot_black <- ggplot(data=new_df,aes(x=values,y=black_win)) + geom_bar(stat='identity',color='black', fill="#6c584c") + geom_errorbar(aes(ymin=black_win_bottom,ymax=black_win_top),color = "red",width=.05)+
-    labs(x = 'Ilość ruchów', y = 'P' , title="Wygrana czarnego") 
+    labs(x = 'Ilość ruchów w partii', y = 'P' , title="Wygrana czarnego gracza") 
 plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity',color='black', fill="#7e7f83")+ geom_errorbar(aes(ymin=draw_bottom,ymax=draw_top),color = "red",width=.05)+
-    labs(x = 'Ilość ruchów', y = 'P' , title="Remis") 
+    labs(x = 'Ilość ruchów w partii', y = 'P' , title="Remis") 
 grid.arrange(plot_white,plot_black,plot_draw) 
 ```
 z wykresów możemy odczytać że prawdopodobieństwo wygrania białych maleje wraz z kolejnymi ruchami, natomiast prawdopodobieństwo wygrania czarnych rośnie do około $100$ ruchu, by potem maleć. Natomiast prawdopodobieństwo remisu rośnie wraz z kolejnymi posunięciami. 
