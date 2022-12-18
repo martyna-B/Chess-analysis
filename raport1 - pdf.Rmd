@@ -240,7 +240,7 @@ df <-  df %>% mutate(
     draw = ifelse(winner =='draw',1,0)
 )
 ```
-### Otwarcia (?)
+### Uporządkowanie otwarć
 
 W raporcie przeanalizujemy prawdopodobieńtwo różnych zakończeń rozgrywki także ze względu na wybrane otwarcie. Aby uzyskać rzetelne wyniki, nie możemy uwzględnić otwarć, które rozegrała zbyt mała liczba graczy. Okazuje się jednak, że kolumna opening_name zawiera 1477 unikalnych wartości. Dzieje się tak, ponieważ dane rozróżniają wiele wariantów poszczególnych otwarć. Przykładowo "obrona sycylijska" została rozegrana w 181 różnych wariantach, takich jak:
 
