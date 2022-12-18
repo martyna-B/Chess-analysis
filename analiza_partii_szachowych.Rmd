@@ -243,7 +243,7 @@ df <- na.omit(df)
 ### Zastosowanie One Hot Encoding dla kolumny "winner"
 
 Wynik naszej partii znajduje się w kolumnie "winner". Ta kolumna zawiera $3$ wartości: "white" , "black" i "draw".
-Dla ułatwienia analizy stworzymy $3$ dodatkowe kolumny o odpowiednich nazwach "white_win", "black_win" oraz "draw". Każda z tych kolumn ma wartość $1$ lub $0$. Gdy w kolumnie "winner" znajduje się "white", czyli zwyciężył biały gracz, to $1$ przypisujemy do "white_win", a do "black_win" oraz "draw" przypisujemy $0$. Analogicznie postępujemy dla pozostałych wyników.
+Dla ułatwienia analizy stworzymy $3$ dodatkowe kolumny o odpowiednich nazwach "white_win", "black_win" oraz "draw". Każda z tych kolumn ma wartość $1$ lub $0$. Gdy w kolumnie "winner" znajduje$~$się "white", czyli zwyciężył biały gracz, to $1$ przypisujemy do "white_win", a do "black_win" oraz "draw" przypisujemy $0$. Analogicznie postępujemy dla pozostałych wyników.
 
 ```{r}
 df <-  df %>% mutate(
@@ -259,6 +259,8 @@ W raporcie przeanalizujemy prawdopodobieństwo różnych zakończeń rozgrywki t
 ```{r, echo=FALSE}
 print(unique(openings_sicilian)[2:6])
 ```
+
+\newpage 
 
 W celu umożliwienia analizy otwarć stworzymy nową kolumnę, zawierającą jedynie nazwę otwarcia (bez uwzględnienia wariantu). Nazywamy ją "openings_general". Zawiera ona $149$ wartości unikalnych. Przeanalizujemy te otwarcia, których zostało rozegranych więcej niż $500$, czyli:
 
@@ -404,7 +406,7 @@ kurtosis(df$black_rating)
 | kurtoza   | 0,029    | -0,052   |
 
 
-Analizując statystyki opisowe zawarte w tabelce, możemy dojść do wniosku, że biały ma średnio większy ranking. Ta różnica wynosi jedynie około $8$ punktów, co przy średnim rankingu nieco mniejszym niż $1600$ jest znikomą przewagą. Dodatkowo możemy odczytać, że mediana białego jest o $5$ punktów większa od mediany czarnego co znowu jest małą różnicą w stosunku do mediany powyżej $1560$. Możemy zobaczyć, że biały ma  minimalnie większą wariancję, ale różni się tylko o $7$, co przy wariancji białego równej $84221,18$ nie jest znaczącą różnicą. Następnie możemy zauważyć, że rozkład rankingu czarnego ma mniejszą skośność, ale obydwa rozkłady mają na tyle małe skośności w stosunku do odchylenia standardowego, że możemy przyjąć, iż ich rozkłady są symetryczne. Estymowane kurtozy są na tyle blisko $0$, że możemy przyjąć, że rozkłady mają tyle samo danych odstających co rozkład normalny.
+Analizując statystyki opisowe zawarte w tabelce, możemy dojść do wniosku, że biały ma średnio większy ranking. Ta różnica wynosi jedynie około $8$ punktów, co przy średnim rankingu nieco mniejszym niż $1600$ jest znikomą przewagą. Dodatkowo możemy odczytać, że$~$mediana białego jest o $5$ punktów większa od mediany czarnego co znowu jest małą różnicą w stosunku do mediany powyżej $1560$. Możemy zobaczyć, że$~$biały ma  minimalnie większą wariancję, ale różni się tylko o $7$, co przy wariancji białego równej $84221,18$ nie jest znaczącą różnicą. Następnie możemy zauważyć, że rozkład rankingu czarnego ma mniejszą skośność, ale obydwa rozkłady mają na tyle małe skośności w stosunku do odchylenia standardowego, że możemy przyjąć, iż ich rozkłady są symetryczne. Estymowane kurtozy są na tyle blisko $0$, że możemy przyjąć, że rozkłady mają tyle samo danych odstających co rozkład normalny.
 
 Powyższa analiza statystyk opisowych pozwala stwierdzić, że biały ma średnio przewagę, która nie jest jednak znacząca w naszej analizie.
 
@@ -439,7 +441,7 @@ Analizowaliśmy jak wyglądają prawdopodobieństwa zakończenia partii od ranki
 
 ggplot(data=df,aes(x=ranting_difrents)) + geom_histogram(bins=50, color='black') + labs(x= 'Różnica w rankingu', y='Liczebnść', title="Histogram różnicy w rankingu między graczami")
 ```
-Jak możemy zobaczyć rozkład różnic w rankingu jest niemal symetryczny, a średnia wartość jest w okolicach $0$. Dokładnie wynosi $7,56$. Podzielimy różnice na kategorię o długości $100$ tak jak w przypadku rankingu gracza białego. Zobaczymy teraz jak wyglądają prawdopodobieństwa zakończenia partii w zależności od przedziału różnic. Do analizy bierzemy przedziały, które zawierają ponad $10$ gier.
+Jak możemy zobaczyć rozkład różnic w rankingu jest niemal symetryczny, a średnia wartość jest w$~$okolicach$~$$0$. Dokładnie wynosi $7,56$. Podzielimy różnice na kategorię o$~$długości $100$ tak jak w$~$przypadku rankingu gracza białego. Zobaczymy teraz jak wyglądają prawdopodobieństwa zakończenia partii w zależności od przedziału różnic. Do analizy bierzemy przedziały, które zawierają ponad $10$ gier.
 ```{r,echo=FALSE}
 if (file.exists("data/winner_depend_diffrents_ranting.csv")){
   new_df <- read.csv("data/winner_depend_diffrents_ranting.csv")
@@ -468,7 +470,7 @@ Partie w szachach mają różne długości. Sprawdzimy najpierw ile trwają part
 ggplot(data=df,aes(x=turns)) + geom_histogram(bins=50, color='black') + labs(x= 'Ilość ruchów w partii ', y='Liczebnść', title="Histogram ilości ruchów w partii") 
 
 ```
-Jak możemy zauważyć, większość gier trwa mniej niż $100$ ruchów. Nasze dane podzielimy na przedziały o długości $10$ gdzie pierwszy przedział to $[0,10)$. Sprawdzimy jak wyglądają prawdopodobieństwa różnych zakończeń partii w zależności od przedziałów ilości posunięć. Bierzemy pod uwagę przedziały, które zawierają ponad 10 gier.
+Jak możemy zauważyć, większość gier trwa mniej niż $100$ ruchów. Nasze dane podzielimy na przedziały $~$długości $10$ gdzie pierwszy przedział to $[0,10)$. Sprawdzimy jak wyglądają prawdopodobieństwa różnych zakończeń partii w zależności od przedziałów ilości posunięć. Bierzemy pod uwagę przedziały, które zawierają ponad 10 gier.
 
 ```{r, echo=FALSE}
 if (file.exists("data/winner_depend_turns.csv")){
@@ -485,7 +487,7 @@ plot_draw <- ggplot(data=new_df,aes(x=values,y=draw)) + geom_bar(stat='identity'
     labs(x = 'Ilość ruchów w partii', y = 'P' , title="Remis") 
 grid.arrange(plot_white,plot_black,plot_draw) 
 ```
-z wykresów możemy odczytać że prawdopodobieństwo wygrania białych maleje wraz z kolejnymi ruchami, natomiast prawdopodobieństwo wygrania czarnych rośnie do około $100$ ruchu, by potem maleć. Natomiast prawdopodobieństwo remisu rośnie wraz z kolejnymi posunięciami. 
+Z wykresów możemy odczytać że prawdopodobieństwo wygrania białych maleje wraz z kolejnymi ruchami, natomiast prawdopodobieństwo wygrania czarnych rośnie do około $100$ ruchu, by potem maleć. Natomiast prawdopodobieństwo remisu rośnie wraz z kolejnymi posunięciami. 
 
 \newpage
 
